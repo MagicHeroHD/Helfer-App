@@ -1,696 +1,689 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="description" content="Interne Helfer App für Team-Koordination" />
-  
-  <!-- PWA Meta Tags -->
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" href="./icon-192x192.png" sizes="192x192">
-  <link rel="icon" type="image/png" href="./icon-512x512.png" sizes="512x512">
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <title>Helfer App</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Interne Helfer App für Team-Koordination" />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./icon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="./icon-512x512.png" sizes="512x512">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <title>Helfer App</title>
+    <style>
+        /* Ticker Animation */
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .ticker-content {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+        }
+    </style>
 </head>
-<body>
-  <div id="root"></div>
-  
-  <!-- React & Babel CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
-  <!-- Deine React App -->
-  <script type="text/babel">
-    const { useEffect, useMemo, useState } = React;
+<body class="bg-gray-50 min-h-screen pb-24">
+    <div id="root"></div>
 
-    // 🛠️ Katastrophenschutz-Helfer App
-    const CONFIG = {
-      brand: {
-        name: "Helfer App",
-        logoLetter: "H",
-      },
-      links: {
-        groupAlarmApp: "https://app.groupalarm.com/",
-        icalFeed: "https://app.groupalarm.com/api/v1/appointments/ical/public/EV3pB5GRjA",
-        whatsappPrimary: "https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk",
-        whatsappDirect: "https://wa.me/4917012345678?text=Hallo%20Team",
-        teams: "https://teams.microsoft.com/l/team/19%3A840ab1376e824466af9b2d69af56b27b%40thread.tacv2/conversations?groupId=dfd21644-ba31-4cac-9c3a-f90bc076762e&tenantId=7a0df6a5-35c9-4bdc-ae48-9c981a4d5559",
-        arno: "https://arno.cloud/index.html#!/dashboard",
-        planner: "https://planner.cloud.microsoft/webui/plan/KJ6VqdrFp0GVQMeW5LUfPJYABn_H/view/board?tid=7a0df6a5-35c9-4bdc-ae48-9c981a4d5559",
-        albumUrl: "https://cloud.example.org/apps/photos/s/TEAM-ALBUM",
-      },
-      forms: [
-        { title: "Einsatz-Rückmeldung", url: "https://forms.example.org/rueckmeldung", note: "An/Abmeldung, Verfügbarkeit" },
-        { title: "Schadensmeldung Material", url: "https://forms.example.org/schaden", note: "Geräte & Verbrauchsmaterial" },
-        { title: "Fortbildungswunsch", url: "https://forms.example.org/fortbildung", note: "Kurse & Termine" },
-      ],
-      documents: [
-        { title: "Alarm- & Ausrückeordnung", url: "https://cloud.example.org/s/AAO.pdf", tags: ["AAO", "Alarm"] },
-        { title: "Hygieneplan Verpflegung", url: "https://cloud.example.org/s/Hygieneplan.pdf", tags: ["Hygiene", "Verpflegung"] },
-        { title: "Dienstvereinbarung KatS", url: "https://cloud.example.org/s/DV-KatS.pdf", tags: ["Recht", "DV"] },
-      ],
-      launcher: {
-        einsatzdienste: [
-          { title: "Einsatzberichte", url: "https://forms.office.com/pages/responsepage.aspx?id=pfYNesk13EuuSJyYGk1VWYBVa_0Efu9ApG8k3ZDAOAVUMzRMMTkzMkNUM1o5Vk1YRjBWQjMxRlVKSS4u&route=shorturl" },
-          { title: "Patientenprotokoll", url: "https://forms.office.com/e/fV9cptssSn" },
-          { title: "First Responder Protokoll", url: "https://forms.office.com/pages/responsepage.aspx?id=pfYNesk13EuuSJyYGk1VWYBVa_0Efu9ApG8k3ZDAOAVUOUdQVFFGOUJVRFFOUFlBSFk3MjVMT09NUy4u&route=shorturl" },
-        ],
-        verwaltung: [
-          { title: "SharePoint – Verwaltung", url: "https://maltesercloud-my.sharepoint.com/:f:/g/personal/nico_mueck_malteser_org/Er2fSfaHIHJGtfnsfKYny2UBZV9acC1zwRoNAV2imllcXw?e=tIBynH" },
-          { title: "Nextcloud – Team", url: "https://cloud.example.org/apps/files/" },
-        ],
-        ticketsystem: [
-          { title: "Ticketsystem", url: "https://forms.office.com/e/yNThKqWcv1" },
-        ],
-        hygiene: [
-          { title: "Hygieneplan Verpflegung (PDF)", url: "https://cloud.example.org/s/Hygieneplan.pdf" },
-        ],
-        checklisten: [
-          { title: "Checkliste Feldküche (PDF)", url: "https://cloud.example.org/s/Checkliste-Feldkueche.pdf" },
-        ],
-        wichtige: [
-          { title: "AAO – Alarm- & Ausrückeordnung", url: "https://cloud.example.org/s/AAO.pdf" },
-        ],
-      }
-    };
+    <!-- ✅ FUNKTIONIERENDE React 17 CDNs -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    const BASE_EVENTS = [
-      { id: "e1", title: "Übungsdienst Verpflegung", start: "2025-10-05T18:00", end: "2025-10-05T21:00", location: "Unterkunft Lagerhalle", type: "Übung" },
-      { id: "e2", title: "Sanitätsdienst Stadtfest", start: "2025-10-12T10:00", end: "2025-10-12T18:00", location: "Innenstadt", type: "Dienst" },
-    ];
+    <script type="text/babel">
+        // 🛠️ VOLLSTÄNDIGE Helfer App mit allen Features
+        const { useState, useEffect, useMemo } = React;
 
-    // Hilfsfunktionen
-    const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-    const loadLS = (k, fallback) => {
-      try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; }
-    };
-
-    function formatDateRange(startISO, endISO) {
-      const s = new Date(startISO);
-      const e = endISO ? new Date(endISO) : null;
-      const fmt = (d) => d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-      return e ? `${fmt(s)} – ${fmt(e)}` : fmt(s);
-    }
-
-    function useFakeAuth() {
-      const [user, setUser] = useState(loadLS("auth_user", { name: "Helfer/in" }));
-      useEffect(() => saveLS("auth_user", user), [user]);
-      return { user, login: (name) => setUser({ name }), logout: () => setUser(null) };
-    }
-
-    // ===================== KOMPONENTEN =====================
-
-    function EventTicker() {
-      const [events] = useState(() => loadLS("events", BASE_EVENTS));
-      const items = useMemo(() => {
-        const now = new Date();
-        const horizonDays = 10;
-        const horizon = new Date(now.getTime() + horizonDays * 86400000);
-        return events
-          .filter(e => e.start && new Date(e.end || e.start) >= now && new Date(e.start) <= horizon)
-          .sort((a,b) => new Date(a.start) - new Date(b.start))
-          .map(e => {
-            const d = new Date(e.start);
-            const dateStr = d.toLocaleDateString(undefined, { weekday:"short", day:"2-digit", month:"2-digit" });
-            const timeStr = d.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
-            const loc = e.location ? ` @ ${e.location}` : "";
-            return `${dateStr} ${timeStr} – ${e.title}${loc}`;
-          });
-      }, [events]);
-
-      if (!items.length) return null;
-      
-      return React.createElement('div', { 
-        className: "border-b border-gray-200 bg-white/80 backdrop-blur mt-4" 
-      },
-        React.createElement('style', null, `@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`),
-        React.createElement('div', { className: "overflow-hidden" },
-          React.createElement('div', { className: "whitespace-nowrap py-2" },
-            React.createElement('div', { 
-              className: "inline-block",
-              style: { animation: "ticker 30s linear infinite" } 
+        const CONFIG = {
+            brand: {
+                name: "Helfer App",
+                logoLetter: "H",
             },
-              [...items, ...items].map((t,i) =>
-                React.createElement('span', { 
-                  key: i, 
-                  className: "mx-6 text-sm text-gray-700" 
-                }, `🗓️ ${t}`)
-              )
-            )
-          )
-        )
-      );
-    }
-
-    function BottomDock() {
-      const items = [
-        { label: "GroupAlarm", icon: "🚨", url: CONFIG.links.groupAlarmApp },
-        { label: "WhatsApp", icon: "💬", url: (CONFIG.links.whatsappPrimary || CONFIG.links.whatsappDirect || "#") },
-        { label: "Teams", icon: "👥", url: CONFIG.links.teams },
-        { label: "ARNO", icon: "🧭", url: CONFIG.links.arno },
-        { label: "Planner", icon: "🗂️", url: CONFIG.links.planner },
-      ];
-      
-      return React.createElement('nav', { 
-        className: "fixed bottom-2 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-gray-200 px-3 py-2 flex gap-3" 
-      },
-        items.map((it,idx) =>
-          React.createElement('a', {
-            key: idx,
-            href: it.url,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform"
-          },
-            React.createElement('div', { className: "text-lg" }, it.icon),
-            React.createElement('div', null, it.label)
-          )
-        )
-      );
-    }
-
-    // ===================== TABS =====================
-
-    function HomeTab() {
-      const [open, setOpen] = useState(null);
-      const [previewUrl, setPreviewUrl] = useState(null);
-      const groups = [
-        { key: "einsatzdienste", label: "Einsatzdienste", icon: "🚑" },
-        { key: "verwaltung", label: "Verwaltung", icon: "🏢" },
-        { key: "ticketsystem", label: "Ticketsystem", icon: "🎫" },
-        { key: "hygiene", label: "Hygiene", icon: "🧼" },
-        { key: "checklisten", label: "Checklisten", icon: "✅" },
-        { key: "wichtige", label: "Wichtige Unterlagen", icon: "📚" },
-      ];
-      const data = CONFIG.launcher;
-
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-14" },
-        React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-5 place-items-stretch" },
-          groups.map((g) =>
-            React.createElement('button', {
-              key: g.key,
-              onClick: () => setOpen(g.key),
-              className: "rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105"
+            links: {
+                groupAlarmApp: "https://app.groupalarm.com/",
+                icalFeed: "https://app.groupalarm.com/api/v1/appointments/ical/public/EV3pB5GRjA",
+                whatsappPrimary: "https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk",
+                whatsappDirect: "https://wa.me/4917012345678?text=Hallo%20Team",
+                teams: "https://teams.microsoft.com/l/team/19%3A840ab1376e824466af9b2d69af56b27b%40thread.tacv2/conversations?groupId=dfd21644-ba31-4cac-9c3a-f90bc076762e&tenantId=7a0df6a5-35c9-4bdc-ae48-9c981a4d5559",
+                arno: "https://arno.cloud/index.html#!/dashboard",
+                planner: "https://planner.cloud.microsoft/webui/plan/KJ6VqdrFp0GVQMeW5LUfPJYABn_H/view/board?tid=7a0df6a5-35c9-4bdc-ae48-9c981a4d5559",
+                albumUrl: "https://cloud.example.org/apps/photos/s/TEAM-ALBUM",
             },
-              React.createElement('div', { className: "text-2xl" }, g.icon),
-              React.createElement('div', { className: "text-lg font-semibold" }, g.label),
-              React.createElement('div', { className: "text-sm text-gray-600" }, "Tippe zum Öffnen")
-            )
-          )
-        ),
-        open && React.createElement('div', { className: "fixed inset-0 z-30" },
-          React.createElement('div', { 
-            className: "absolute inset-0 bg-black/40", 
-            onClick: () => setOpen(null) 
-          }),
-          React.createElement('div', { 
-            className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-xl p-5" 
-          },
-            React.createElement('div', { className: "flex items-center justify-between" },
-              React.createElement('div', { className: "text-lg font-semibold" }, 
-                groups.find(x => x.key === open)?.label
-              ),
-              React.createElement('button', {
-                onClick: () => setOpen(null),
-                className: "px-3 py-1 border border-gray-300 rounded-xl text-sm bg-white hover:bg-gray-50"
-              }, "Schließen")
-            ),
-            React.createElement('div', { className: "mt-4 grid sm:grid-cols-2 gap-3" },
-              (data[open] || []).map((it, i) => {
-                const isPdf = (it.type === 'pdf') || /\.pdf(\?|$)/i.test(it.url || '');
-                return React.createElement('div', {
-                  key: i,
-                  className: "rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
-                },
-                  React.createElement('div', { className: "font-medium" }, it.title),
-                  it.note && React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, it.note),
-                  React.createElement('div', { className: "mt-3 flex gap-2" },
-                    isPdf && React.createElement('button', {
-                      onClick: () => setPreviewUrl(it.url),
-                      className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
-                    }, "Vorschau"),
-                    React.createElement('a', {
-                      href: it.url,
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                      className: "px-3 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90"
-                    }, "Öffnen")
-                  )
-                );
-              })
-            )
-          )
-        ),
-        previewUrl && React.createElement('div', { className: "fixed inset-0 z-40" },
-          React.createElement('div', { 
-            className: "absolute inset-0 bg-black/50", 
-            onClick: () => setPreviewUrl(null) 
-          }),
-          React.createElement('div', { 
-            className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[96vw] h-[85vh] max-w-5xl rounded-2xl border border-gray-200 bg-white shadow-2xl p-4" 
-          },
-            React.createElement('div', { className: "flex items-center justify-between" },
-              React.createElement('div', { className: "font-semibold" }, "PDF-Vorschau"),
-              React.createElement('div', { className: "flex gap-2" },
-                React.createElement('a', {
-                  href: previewUrl,
-                  target: "_blank",
-                  rel: "noopener noreferrer",
-                  className: "px-3 py-1 rounded-xl border border-gray-300 text-sm bg-white hover:bg-gray-50"
-                }, "In neuem Tab"),
-                React.createElement('button', {
-                  onClick: () => setPreviewUrl(null),
-                  className: "px-3 py-1 rounded-xl border border-gray-300 text-sm bg-white hover:bg-gray-50"
-                }, "Schließen")
-              )
-            ),
-            React.createElement('div', { className: "mt-2 h-[calc(85vh-60px)] border rounded-lg overflow-hidden" },
-              React.createElement('iframe', { 
-                src: previewUrl, 
-                className: "w-full h-full",
-                title: "PDF Vorschau"
-              })
-            )
-          )
-        )
-      );
-    }
+            forms: [
+                { title: "Einsatz-Rückmeldung", url: "https://forms.example.org/rueckmeldung", note: "An/Abmeldung, Verfügbarkeit" },
+                { title: "Schadensmeldung Material", url: "https://forms.example.org/schaden", note: "Geräte & Verbrauchsmaterial" },
+                { title: "Fortbildungswunsch", url: "https://forms.example.org/fortbildung", note: "Kurse & Termine" },
+            ],
+            documents: [
+                { title: "Alarm- & Ausrückeordnung", url: "https://cloud.example.org/s/AAO.pdf", tags: ["AAO", "Alarm"] },
+                { title: "Hygieneplan Verpflegung", url: "https://cloud.example.org/s/Hygieneplan.pdf", tags: ["Hygiene", "Verpflegung"] },
+                { title: "Dienstvereinbarung KatS", url: "https://cloud.example.org/s/DV-KatS.pdf", tags: ["Recht", "DV"] },
+            ],
+            launcher: {
+                einsatzdienste: [
+                    { title: "Einsatzberichte", url: "https://forms.office.com/pages/responsepage.aspx?id=pfYNesk13EuuSJyYGk1VWYBVa_0Efu9ApG8k3ZDAOAVUMzRMMTkzMkNUM1o5Vk1YRjBWQjMxRlVKSS4u&route=shorturl" },
+                    { title: "Patientenprotokoll", url: "https://forms.office.com/e/fV9cptssSn" },
+                    { title: "First Responder Protokoll", url: "https://forms.office.com/pages/responsepage.aspx?id=pfYNesk13EuuSJyYGk1VWYBVa_0Efu9ApG8k3ZDAOAVUOUdQVFFGOUJVRFFOUFlBSFk3MjVMT09NUy4u&route=shorturl" },
+                ],
+                verwaltung: [
+                    { title: "SharePoint – Verwaltung", url: "https://maltesercloud-my.sharepoint.com/:f:/g/personal/nico_mueck_malteser_org/Er2fSfaHIHJGtfnsfKYny2UBZV9acC1zwRoNAV2imllcXw?e=tIBynH" },
+                    { title: "Nextcloud – Team", url: "https://cloud.example.org/apps/files/" },
+                    { title: "Dienstanweisung Verwaltung (PDF)", url: "https://cloud.example.org/s/Dienstanweisung-Verwaltung.pdf", type: "pdf" },
+                ],
+                ticketsystem: [
+                    { title: "Ticketsystem", url: "https://forms.office.com/e/yNThKqWcv1" },
+                ],
+                hygiene: [
+                    { title: "Hygieneplan Verpflegung (PDF)", url: "https://cloud.example.org/s/Hygieneplan.pdf" },
+                    { title: "Desinfektionsplan", url: "https://cloud.example.org/s/Desinfektionsplan.pdf" },
+                ],
+                checklisten: [
+                    { title: "Checkliste Feldküche (PDF)", url: "https://cloud.example.org/s/Checkliste-Feldkueche.pdf" },
+                    { title: "Checkliste Einsatzrucksack", url: "https://cloud.example.org/s/Checkliste-Rucksack.pdf" },
+                ],
+                wichtige: [
+                    { title: "AAO – Alarm- & Ausrückeordnung", url: "https://cloud.example.org/s/AAO.pdf" },
+                    { title: "Dienstvereinbarung KatS", url: "https://cloud.example.org/s/DV-KatS.pdf" },
+                ],
+            }
+        };
 
-    function TermineTab() {
-      const [events, setEvents] = useState(loadLS("events", BASE_EVENTS));
-      const [filter, setFilter] = useState("");
-      const upcoming = useMemo(() => {
-        const now = new Date();
-        return events
-          .filter((e) => new Date(e.end || e.start) >= now)
-          .filter((e) => (filter ? e.type === filter : true))
-          .sort((a, b) => new Date(a.start) - new Date(b.start));
-      }, [events, filter]);
+        const BASE_EVENTS = [
+            { id: "e1", title: "Übungsdienst Verpflegung", start: "2025-10-05T18:00", end: "2025-10-05T21:00", location: "Unterkunft Lagerhalle", type: "Übung" },
+            { id: "e2", title: "Sanitätsdienst Stadtfest", start: "2025-10-12T10:00", end: "2025-10-12T18:00", location: "Innenstadt", type: "Dienst" },
+        ];
 
-      useEffect(() => saveLS("events", events), [events]);
+        // Hilfsfunktionen
+        const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+        const loadLS = (k, fallback) => {
+            try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; }
+        };
 
-      const [draft, setDraft] = useState({ title: "", start: "", end: "", location: "", type: "Übung" });
+        function formatDateRange(startISO, endISO) {
+            const s = new Date(startISO);
+            const e = endISO ? new Date(endISO) : null;
+            const fmt = (d) => d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+            return e ? `${fmt(s)} – ${fmt(e)}` : fmt(s);
+        }
 
-      function addEvent() {
-        if (!draft.title || !draft.start) return;
-        setEvents((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), ...draft },
-        ]);
-        setDraft({ title: "", start: "", end: "", location: "", type: draft.type });
-      }
+        function useFakeAuth() {
+            const [user, setUser] = useState(loadLS("auth_user", { name: "Helfer/in" }));
+            useEffect(() => saveLS("auth_user", user), [user]);
+            return { user, login: (name) => setUser({ name }), logout: () => setUser(null) };
+        }
 
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
-        React.createElement('header', { className: "flex flex-col md:flex-row md:items-end md:justify-between gap-4" },
-          React.createElement('div', null,
-            React.createElement('h2', { className: "text-3xl font-extrabold" }, "Termine"),
-            React.createElement('p', { className: "text-gray-600" }, 
-              "Zeigt bevorstehende Dienste, Übungen und Treffen."
-            )
-          ),
-          React.createElement('div', { className: "flex gap-2" },
-            React.createElement('select', { 
-              value: filter, 
-              onChange: (e) => setFilter(e.target.value),
-              className: "rounded-xl border border-gray-300 px-3 py-2"
-            },
-              React.createElement('option', { value: "" }, "Alle Typen"),
-              React.createElement('option', null, "Übung"),
-              React.createElement('option', null, "Dienst"),
-              React.createElement('option', null, "Fortbildung"),
-              React.createElement('option', null, "Einsatz")
-            )
-          )
-        ),
-        React.createElement(EventTicker),
-        React.createElement('div', { className: "grid md:grid-cols-2 gap-4 mt-6" },
-          upcoming.map((e) =>
-            React.createElement('article', { 
-              key: e.id, 
-              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm hover:shadow-md transition-shadow" 
-            },
-              React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, e.type || "Termin"),
-              React.createElement('h3', { className: "text-lg font-semibold mt-1" }, e.title),
-              React.createElement('p', { className: "text-gray-700 mt-1" }, formatDateRange(e.start, e.end)),
-              e.location && React.createElement('p', { className: "text-gray-600 mt-1" }, "📍 ", e.location)
-            )
-          )
-        ),
-        React.createElement('div', { className: "mt-8 rounded-2xl border border-gray-200 p-5 bg-white shadow-sm" },
-          React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Neuer Termin (lokal gespeichert)"),
-          React.createElement('div', { className: "grid md:grid-cols-5 gap-3 mt-3" },
-            React.createElement('input', {
-              placeholder: "Titel",
-              className: "rounded-xl border border-gray-300 px-3 py-2",
-              value: draft.title,
-              onChange: (e) => setDraft({...draft, title: e.target.value})
-            }),
-            React.createElement('input', {
-              type: "datetime-local",
-              className: "rounded-xl border border-gray-300 px-3 py-2",
-              value: draft.start,
-              onChange: (e) => setDraft({...draft, start: e.target.value})
-            }),
-            React.createElement('input', {
-              type: "datetime-local",
-              className: "rounded-xl border border-gray-300 px-3 py-2",
-              value: draft.end,
-              onChange: (e) => setDraft({...draft, end: e.target.value})
-            }),
-            React.createElement('input', {
-              placeholder: "Ort",
-              className: "rounded-xl border border-gray-300 px-3 py-2",
-              value: draft.location,
-              onChange: (e) => setDraft({...draft, location: e.target.value})
-            }),
-            React.createElement('select', {
-              className: "rounded-xl border border-gray-300 px-3 py-2",
-              value: draft.type,
-              onChange: (e) => setDraft({...draft, type: e.target.value})
-            },
-              React.createElement('option', null, "Übung"),
-              React.createElement('option', null, "Dienst"),
-              React.createElement('option', null, "Fortbildung"),
-              React.createElement('option', null, "Einsatz")
-            )
-          ),
-          React.createElement('button', {
-            onClick: addEvent,
-            className: "mt-3 px-4 py-2 rounded-xl bg-black text-white text-sm shadow hover:bg-gray-800 transition-colors"
-          }, "Termin hinzufügen")
-        )
-      );
-    }
+        // ===================== KOMPONENTEN =====================
 
-    function ChatTab() {
-      const [rooms, setRooms] = useState(loadLS("chat_rooms", [
-        { id: "r1", name: "Einsatzleitung", unread: 2 },
-        { id: "r2", name: "Verpflegungsteam", unread: 0 },
-        { id: "r3", name: "San-Dienst Stadtfest", unread: 5 },
-      ]));
-      const [active, setActive] = useState(loadLS("chat_active", "r2"));
-      const [messages, setMessages] = useState(loadLS("chat_messages", {
-        r2: [ { id: "m1", user: "Lea", text: "Bitte Wasserkanister auffüllen.", ts: Date.now()-3600_000 }, ],
-      }));
-      const [input, setInput] = useState("");
+        function EventTicker() {
+            const [events] = useState(() => loadLS("events", BASE_EVENTS));
+            const items = useMemo(() => {
+                const now = new Date();
+                const horizonDays = 10;
+                const horizon = new Date(now.getTime() + horizonDays * 86400000);
+                return events
+                    .filter(e => e.start && new Date(e.end || e.start) >= now && new Date(e.start) <= horizon)
+                    .sort((a,b) => new Date(a.start) - new Date(b.start))
+                    .map(e => {
+                        const d = new Date(e.start);
+                        const dateStr = d.toLocaleDateString(undefined, { weekday:"short", day:"2-digit", month:"2-digit" });
+                        const timeStr = d.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+                        const loc = e.location ? ` @ ${e.location}` : "";
+                        return `${dateStr} ${timeStr} – ${e.title}${loc}`;
+                    });
+            }, [events]);
 
-      useEffect(() => saveLS("chat_rooms", rooms), [rooms]);
-      useEffect(() => saveLS("chat_active", active), [active]);
-      useEffect(() => saveLS("chat_messages", messages), [messages]);
-
-      function send() {
-        if (!input.trim()) return;
-        setMessages((prev) => ({
-          ...prev,
-          [active]: [...(prev[active]||[]), { id: crypto.randomUUID(), user: "Ich", text: input.trim(), ts: Date.now() }],
-        }));
-        setInput("");
-      }
-
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
-        React.createElement('header', { className: "flex items-center justify-between" },
-          React.createElement('div', null,
-            React.createElement('h2', { className: "text-3xl font-extrabold" }, "Chat-Räume"),
-            React.createElement('p', { className: "text-gray-600" }, "Demo-Chat (lokal gespeichert).")
-          )
-        ),
-        React.createElement('div', { className: "mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm p-4" },
-          React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "WhatsApp-Gruppen"),
-          React.createElement('div', { className: "mt-2 flex flex-wrap gap-2" },
-            React.createElement('a', {
-              href: CONFIG.links.whatsappPrimary,
-              className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
-            }, "Hauptgruppe"),
-            React.createElement('a', {
-              href: CONFIG.links.whatsappDirect,
-              className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
-            }, "Direktchat")
-          )
-        ),
-        React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
-          React.createElement('aside', { className: "md:col-span-1 space-y-2" },
-            rooms.map((r) =>
-              React.createElement('button', {
-                key: r.id,
-                onClick: () => setActive(r.id),
-                className: `w-full text-left px-4 py-3 rounded-xl border shadow-sm ${active===r.id?"bg-black text-white border-black":"bg-white border-gray-200"}`
-              },
-                React.createElement('div', { className: "flex items-center justify-between" },
-                  React.createElement('span', { className: "font-medium" }, r.name),
-                  r.unread > 0 && React.createElement('span', { 
-                    className: `text-xs ${active===r.id?"bg-white text-black":"bg-black text-white"} rounded-full px-2 py-0.5` 
-                  }, r.unread)
-                )
-              )
-            )
-          ),
-          React.createElement('main', { className: "md:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col h-[480px]" },
-            React.createElement('div', { className: "flex-1 overflow-y-auto space-y-3 pr-1" },
-              (messages[active]||[]).map(m =>
-                React.createElement('div', { 
-                  key: m.id, 
-                  className: `max-w-[80%] ${m.user==="Ich"?"ml-auto":""}` 
-                },
-                  React.createElement('div', { 
-                    className: `rounded-2xl px-4 py-2 border ${m.user==="Ich"?"bg-black text-white border-black":"bg-gray-50 border-gray-200"}` 
-                  },
-                    React.createElement('div', { className: "text-sm" },
-                      React.createElement('span', { className: "font-semibold" }, m.user),
-                      ": ",
-                      m.text
-                    ),
-                    React.createElement('div', { className: "text-[10px] opacity-70 mt-1" }, 
-                      new Date(m.ts).toLocaleString()
+            if (!items.length) return null;
+            
+            return React.createElement('div', { className: "border-b border-gray-200 bg-white/80 backdrop-blur mt-4" },
+                React.createElement('div', { className: "ticker-container" },
+                    React.createElement('div', { className: "ticker-content py-2" },
+                        [...items, ...items].map((t,i) =>
+                            React.createElement('span', { 
+                                key: i, 
+                                className: "mx-6 text-sm text-gray-700" 
+                            }, `🗓️ ${t}`)
+                        )
                     )
-                  )
                 )
-              )
-            ),
-            React.createElement('div', { className: "mt-3 flex gap-2" },
-              React.createElement('input', {
-                value: input,
-                onChange: (e) => setInput(e.target.value),
-                placeholder: "Nachricht schreiben…",
-                className: "flex-1 rounded-xl border border-gray-300 px-3 py-2"
-              }),
-              React.createElement('button', {
-                onClick: send,
-                className: "px-4 py-2 rounded-xl bg-black text-white text-sm shadow"
-              }, "Senden")
-            )
-          )
-        )
-      );
-    }
+            );
+        }
 
-    function AlbumTab() {
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
-        React.createElement('h2', { className: "text-3xl font-extrabold" }, "Bilderalbum"),
-        React.createElement('p', { className: "text-gray-600" }, "Gemeinsame Team-Fotos."),
-        React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
-          React.createElement('a', { 
-            href: CONFIG.links.albumUrl, 
-            className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
-          },
-            React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
-            React.createElement('div', { className: "font-semibold mt-3" }, "Team-Album öffnen"),
-            React.createElement('div', { className: "text-sm text-gray-600" }, "Nextcloud/SharePoint")
-          ),
-          React.createElement('a', { 
-            href: "#", 
-            className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
-          },
-            React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
-            React.createElement('div', { className: "font-semibold mt-3" }, "Einsatz Fotos"),
-            React.createElement('div', { className: "text-sm text-gray-600" }, "Beispielalbum")
-          )
-        )
-      );
-    }
-
-    function FormsTab() {
-      const [query, setQuery] = useState("");
-      const items = CONFIG.forms.filter(f => (f.title+" "+(f.note||"")).toLowerCase().includes(query.toLowerCase()));
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
-        React.createElement('h2', { className: "text-3xl font-extrabold" }, "Formulare"),
-        React.createElement('p', { className: "text-gray-600" }, "Schnelle Links zu Forms."),
-        React.createElement('div', { className: "mt-4 flex gap-2" },
-          React.createElement('input', {
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            placeholder: "Suchen…",
-            className: "rounded-xl border border-gray-300 px-3 py-2"
-          })
-        ),
-        React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
-          items.map((f, i) =>
-            React.createElement('a', {
-              key: i,
-              href: f.url,
-              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
+        function BottomDock() {
+            const items = [
+                { label: "GroupAlarm", icon: "🚨", url: CONFIG.links.groupAlarmApp },
+                { label: "WhatsApp", icon: "💬", url: (CONFIG.links.whatsappPrimary || CONFIG.links.whatsappDirect || "#") },
+                { label: "Teams", icon: "👥", url: CONFIG.links.teams },
+                { label: "ARNO", icon: "🧭", url: CONFIG.links.arno },
+                { label: "Planner", icon: "🗂️", url: CONFIG.links.planner },
+            ];
+            
+            return React.createElement('nav', { 
+                className: "fixed bottom-2 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-gray-200 px-3 py-2 flex gap-3" 
             },
-              React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Formular"),
-              React.createElement('div', { className: "font-semibold mt-1" }, f.title),
-              f.note && React.createElement('div', { className: "text-sm text-gray-600" }, f.note)
-            )
-          )
-        )
-      );
-    }
+                items.map((it,idx) =>
+                    React.createElement('a', {
+                        key: idx,
+                        href: it.url,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        className: "w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform"
+                    },
+                        React.createElement('div', { className: "text-lg" }, it.icon),
+                        React.createElement('div', null, it.label)
+                    )
+                )
+            );
+        }
 
-    function FilesTab() {
-      const [query, setQuery] = useState("");
-      const [tags, setTags] = useState([]);
-      const allTags = useMemo(() => Array.from(new Set(CONFIG.documents.flatMap(d => d.tags||[]))), []);
-      const items = useMemo(() => CONFIG.documents.filter(d => {
-        const text = (d.title + " " + (d.tags||[]).join(" ")).toLowerCase();
-        const okText = text.includes(query.toLowerCase());
-        const okTags = tags.length ? tags.every(t => d.tags?.includes(t)) : true;
-        return okText && okTags;
-      }), [query, tags]);
+        // ===================== TABS =====================
 
-      function toggleTag(t) { setTags((prev) => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t]); }
+        function HomeTab() {
+            const [open, setOpen] = useState(null);
+            const [previewUrl, setPreviewUrl] = useState(null);
+            const groups = [
+                { key: "einsatzdienste", label: "Einsatzdienste", icon: "🚑" },
+                { key: "verwaltung", label: "Verwaltung", icon: "🏢" },
+                { key: "ticketsystem", label: "Ticketsystem", icon: "🎫" },
+                { key: "hygiene", label: "Hygiene", icon: "🧼" },
+                { key: "checklisten", label: "Checklisten", icon: "✅" },
+                { key: "wichtige", label: "Wichtige Unterlagen", icon: "📚" },
+            ];
+            const data = CONFIG.launcher;
 
-      return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
-        React.createElement('h2', { className: "text-3xl font-extrabold" }, "Dateien & Unterlagen"),
-        React.createElement('p', { className: "text-gray-600" }, "Wichtige Dokumente."),
-        React.createElement('div', { className: "mt-4 flex flex-wrap gap-2 items-center" },
-          React.createElement('input', {
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            placeholder: "Suchen…",
-            className: "rounded-xl border border-gray-300 px-3 py-2"
-          }),
-          React.createElement('div', { className: "flex gap-2 flex-wrap" },
-            allTags.map(t =>
-              React.createElement('button', {
-                key: t,
-                onClick: () => toggleTag(t),
-                className: `px-3 py-1 rounded-full text-sm border ${tags.includes(t)?"bg-black text-white border-black":"bg-white border-gray-300"}`
-              }, t)
-            )
-          )
-        ),
-        React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
-          items.map((d, i) =>
-            React.createElement('a', {
-              key: i,
-              href: d.url,
-              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
-            },
-              React.createElement('div', { className: "h-20 rounded-xl bg-gray-100" }),
-              React.createElement('div', { className: "font-semibold mt-3" }, d.title),
-              React.createElement('div', { className: "text-sm text-gray-600" }, (d.tags||[]).join(" • "))
-            )
-          )
-        )
-      );
-    }
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-14" },
+                React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-5 place-items-stretch" },
+                    groups.map((g) =>
+                        React.createElement('button', {
+                            key: g.key,
+                            onClick: () => setOpen(g.key),
+                            className: "rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105"
+                        },
+                            React.createElement('div', { className: "text-2xl" }, g.icon),
+                            React.createElement('div', { className: "text-lg font-semibold" }, g.label),
+                            React.createElement('div', { className: "text-sm text-gray-600" }, "Tippe zum Öffnen")
+                        )
+                    )
+                ),
+                open && React.createElement('div', { className: "fixed inset-0 z-30" },
+                    React.createElement('div', { 
+                        className: "absolute inset-0 bg-black/40", 
+                        onClick: () => setOpen(null) 
+                    }),
+                    React.createElement('div', { 
+                        className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-xl p-5" 
+                    },
+                        React.createElement('div', { className: "flex items-center justify-between" },
+                            React.createElement('div', { className: "text-lg font-semibold" }, 
+                                groups.find(x => x.key === open)?.label
+                            ),
+                            React.createElement('button', {
+                                onClick: () => setOpen(null),
+                                className: "px-3 py-1 border border-gray-300 rounded-xl text-sm bg-white hover:bg-gray-50"
+                            }, "Schließen")
+                        ),
+                        React.createElement('div', { className: "mt-4 grid sm:grid-cols-2 gap-3" },
+                            (data[open] || []).map((it, i) => {
+                                const isPdf = (it.type === 'pdf') || /\.pdf(\?|$)/i.test(it.url || '');
+                                return React.createElement('div', {
+                                    key: i,
+                                    className: "rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
+                                },
+                                    React.createElement('div', { className: "font-medium" }, it.title),
+                                    it.note && React.createElement('div', { className: "text-sm text-gray-600 mt-1" }, it.note),
+                                    React.createElement('div', { className: "mt-3 flex gap-2" },
+                                        isPdf && React.createElement('button', {
+                                            onClick: () => setPreviewUrl(it.url),
+                                            className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
+                                        }, "Vorschau"),
+                                        React.createElement('a', {
+                                            href: it.url,
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "px-3 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90"
+                                        }, "Öffnen")
+                                    )
+                                );
+                            })
+                        )
+                    )
+                ),
+                previewUrl && React.createElement('div', { className: "fixed inset-0 z-40" },
+                    React.createElement('div', { 
+                        className: "absolute inset-0 bg-black/50", 
+                        onClick: () => setPreviewUrl(null) 
+                    }),
+                    React.createElement('div', { 
+                        className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[96vw] h-[85vh] max-w-5xl rounded-2xl border border-gray-200 bg-white shadow-2xl p-4" 
+                    },
+                        React.createElement('div', { className: "flex items-center justify-between" },
+                            React.createElement('div', { className: "font-semibold" }, "PDF-Vorschau"),
+                            React.createElement('div', { className: "flex gap-2" },
+                                React.createElement('a', {
+                                    href: previewUrl,
+                                    target: "_blank",
+                                    rel: "noopener noreferrer",
+                                    className: "px-3 py-1 rounded-xl border border-gray-300 text-sm bg-white hover:bg-gray-50"
+                                }, "In neuem Tab"),
+                                React.createElement('button', {
+                                    onClick: () => setPreviewUrl(null),
+                                    className: "px-3 py-1 rounded-xl border border-gray-300 text-sm bg-white hover:bg-gray-50"
+                                }, "Schließen")
+                            )
+                        ),
+                        React.createElement('div', { className: "mt-2 h-[calc(85vh-60px)] border rounded-lg overflow-hidden" },
+                            React.createElement('iframe', { 
+                                src: previewUrl, 
+                                className: "w-full h-full",
+                                title: "PDF Vorschau"
+                            })
+                        )
+                    )
+                )
+            );
+        }
 
-    // ===================== HAUPTPAPP =====================
+        function TermineTab() {
+            const [events, setEvents] = useState(loadLS("events", BASE_EVENTS));
+            const [filter, setFilter] = useState("");
+            const upcoming = useMemo(() => {
+                const now = new Date();
+                return events
+                    .filter((e) => new Date(e.end || e.start) >= now)
+                    .filter((e) => (filter ? e.type === filter : true))
+                    .sort((a, b) => new Date(a.start) - new Date(b.start));
+            }, [events, filter]);
 
-    function HelferApp() {
-      const [tab, setTab] = useState("home");
-      const { user, login, logout } = useFakeAuth();
+            useEffect(() => saveLS("events", events), [events]);
 
-      const TabButton = ({ id, label }) =>
-        React.createElement('button', {
-          onClick: () => setTab(id),
-          className: `px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border
-            ${tab === id ? "bg-black text-white border-black" : "bg-white hover:bg-gray-50 border-gray-200"}`,
-          'aria-pressed': tab === id
-        }, label);
+            const [draft, setDraft] = useState({ title: "", start: "", end: "", location: "", type: "Übung" });
 
-      return React.createElement('div', { className: "min-h-screen pb-24 bg-gradient-to-b from-gray-50 to-white text-gray-900" },
-        React.createElement('header', { className: "sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200" },
-          React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between" },
-            React.createElement('div', { className: "flex items-center gap-2" },
-              React.createElement('div', { className: "h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold" }, 
-                CONFIG.brand.logoLetter
-              ),
-              React.createElement('div', { className: "text-lg font-semibold tracking-tight" }, CONFIG.brand.name)
-            ),
-            React.createElement('nav', { className: "flex gap-2" },
-              React.createElement(TabButton, { id: "home", label: "Start" }),
-              React.createElement(TabButton, { id: "termine", label: "Termine" }),
-              React.createElement(TabButton, { id: "chat", label: "Chat" }),
-              React.createElement(TabButton, { id: "album", label: "Bilderalbum" }),
-              React.createElement(TabButton, { id: "forms", label: "Formulare" }),
-              React.createElement(TabButton, { id: "files", label: "Dateien" })
-            ),
-            React.createElement('div', { className: "hidden md:flex items-center gap-2" },
-              user ? [
-                React.createElement('span', { 
-                  className: "text-sm text-gray-600", 
-                  key: "greet" 
-                }, "Hallo, ", user.name),
-                React.createElement('button', { 
-                  onClick: logout, 
-                  className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50",
-                  key: "logout"
-                }, "Abmelden")
-              ] : 
-              React.createElement('button', {
-                onClick: () => login("Helfer/in"),
-                className: "px-3 py-2 rounded-xl bg-black text-white text-sm hover:bg-gray-800"
-              }, "Anmelden")
-            )
-          )
-        ),
-        tab === "home" && React.createElement(HomeTab),
-        tab === "termine" && React.createElement(TermineTab),
-        tab === "chat" && React.createElement(ChatTab),
-        tab === "album" && React.createElement(AlbumTab),
-        tab === "forms" && React.createElement(FormsTab),
-        tab === "files" && React.createElement(FilesTab),
-        React.createElement(BottomDock),
-        React.createElement('footer', { className: "border-t border-gray-200 py-8 mt-10" },
-          React.createElement('div', { className: "max-w-6xl mx-auto px-4 text-sm text-gray-500" },
-            "© ", new Date().getFullYear(), " ", CONFIG.brand.name, ". Bereit für Einsatz & Übung."
-          )
-        )
-      );
-    }
+            function addEvent() {
+                if (!draft.title || !draft.start) return;
+                setEvents((prev) => [
+                    ...prev,
+                    { id: Math.random().toString(36).substr(2, 9), ...draft },
+                ]);
+                setDraft({ title: "", start: "", end: "", location: "", type: draft.type });
+            }
 
-    // App rendern
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(HelferApp));
-  </script>
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+                React.createElement('header', { className: "flex flex-col md:flex-row md:items-end md:justify-between gap-4" },
+                    React.createElement('div', null,
+                        React.createElement('h2', { className: "text-3xl font-extrabold" }, "Termine"),
+                        React.createElement('p', { className: "text-gray-600" }, 
+                            "Zeigt bevorstehende Dienste, Übungen und Treffen."
+                        )
+                    ),
+                    React.createElement('div', { className: "flex gap-2" },
+                        React.createElement('select', { 
+                            value: filter, 
+                            onChange: (e) => setFilter(e.target.value),
+                            className: "rounded-xl border border-gray-300 px-3 py-2"
+                        },
+                            React.createElement('option', { value: "" }, "Alle Typen"),
+                            React.createElement('option', null, "Übung"),
+                            React.createElement('option', null, "Dienst"),
+                            React.createElement('option', null, "Fortbildung"),
+                            React.createElement('option', null, "Einsatz")
+                        )
+                    )
+                ),
+                React.createElement(EventTicker),
+                React.createElement('div', { className: "grid md:grid-cols-2 gap-4 mt-6" },
+                    upcoming.map((e) =>
+                        React.createElement('article', { 
+                            key: e.id, 
+                            className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm hover:shadow-md transition-shadow" 
+                        },
+                            React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, e.type || "Termin"),
+                            React.createElement('h3', { className: "text-lg font-semibold mt-1" }, e.title),
+                            React.createElement('p', { className: "text-gray-700 mt-1" }, formatDateRange(e.start, e.end)),
+                            e.location && React.createElement('p', { className: "text-gray-600 mt-1" }, "📍 ", e.location)
+                        )
+                    )
+                ),
+                React.createElement('div', { className: "mt-8 rounded-2xl border border-gray-200 p-5 bg-white shadow-sm" },
+                    React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Neuer Termin (lokal gespeichert)"),
+                    React.createElement('div', { className: "grid md:grid-cols-5 gap-3 mt-3" },
+                        React.createElement('input', {
+                            placeholder: "Titel",
+                            className: "rounded-xl border border-gray-300 px-3 py-2",
+                            value: draft.title,
+                            onChange: (e) => setDraft({...draft, title: e.target.value})
+                        }),
+                        React.createElement('input', {
+                            type: "datetime-local",
+                            className: "rounded-xl border border-gray-300 px-3 py-2",
+                            value: draft.start,
+                            onChange: (e) => setDraft({...draft, start: e.target.value})
+                        }),
+                        React.createElement('input', {
+                            type: "datetime-local",
+                            className: "rounded-xl border border-gray-300 px-3 py-2",
+                            value: draft.end,
+                            onChange: (e) => setDraft({...draft, end: e.target.value})
+                        }),
+                        React.createElement('input', {
+                            placeholder: "Ort",
+                            className: "rounded-xl border border-gray-300 px-3 py-2",
+                            value: draft.location,
+                            onChange: (e) => setDraft({...draft, location: e.target.value})
+                        }),
+                        React.createElement('select', {
+                            className: "rounded-xl border border-gray-300 px-3 py-2",
+                            value: draft.type,
+                            onChange: (e) => setDraft({...draft, type: e.target.value})
+                        },
+                            React.createElement('option', null, "Übung"),
+                            React.createElement('option', null, "Dienst"),
+                            React.createElement('option', null, "Fortbildung"),
+                            React.createElement('option', null, "Einsatz")
+                        )
+                    ),
+                    React.createElement('button', {
+                        onClick: addEvent,
+                        className: "mt-3 px-4 py-2 rounded-xl bg-black text-white text-sm shadow hover:bg-gray-800 transition-colors"
+                    }, "Termin hinzufügen")
+                )
+            );
+        }
 
-  <!-- Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js')
-          .then(function(registration) {
-            console.log('ServiceWorker registration successful');
-          })
-          .catch(function(err) {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-      });
-    }
-    // Fallback: Wenn React nicht lädt
-    setTimeout(() => {
-      const root = document.getElementById('root');
-      if (root && root.innerHTML === '') {
-        root.innerHTML = `
-          <div style="padding: 40px; text-align: center; font-family: sans-serif;">
-            <h1 style="color: #dc2626; font-size: 24px; margin-bottom: 16px;">⚠️ App lädt nicht</h1>
-            <p style="color: #6b7280; margin-bottom: 8px;">React konnte nicht geladen werden.</p>
-            <p style="color: #6b7280; font-size: 14px;">Bitte Internetverbindung prüfen oder Seite neu laden.</p>
-            <button onclick="window.location.reload()" style="margin-top: 16px; padding: 8px 16px; background: #000; color: white; border: none; border-radius: 8px;">Seite neu laden</button>
-          </div>
-        `;
-      }
-    }, 3000);
-  </script>
+        function ChatTab() {
+            const [rooms, setRooms] = useState(loadLS("chat_rooms", [
+                { id: "r1", name: "Einsatzleitung", unread: 2 },
+                { id: "r2", name: "Verpflegungsteam", unread: 0 },
+                { id: "r3", name: "San-Dienst Stadtfest", unread: 5 },
+            ]));
+            const [active, setActive] = useState(loadLS("chat_active", "r2"));
+            const [messages, setMessages] = useState(loadLS("chat_messages", {
+                r2: [ { id: "m1", user: "Lea", text: "Bitte Wasserkanister auffüllen.", ts: Date.now()-3600_000 }, ],
+            }));
+            const [input, setInput] = useState("");
+
+            useEffect(() => saveLS("chat_rooms", rooms), [rooms]);
+            useEffect(() => saveLS("chat_active", active), [active]);
+            useEffect(() => saveLS("chat_messages", messages), [messages]);
+
+            function send() {
+                if (!input.trim()) return;
+                setMessages((prev) => ({
+                    ...prev,
+                    [active]: [...(prev[active]||[]), { id: Math.random().toString(36).substr(2, 9), user: "Ich", text: input.trim(), ts: Date.now() }],
+                }));
+                setInput("");
+            }
+
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+                React.createElement('header', { className: "flex items-center justify-between" },
+                    React.createElement('div', null,
+                        React.createElement('h2', { className: "text-3xl font-extrabold" }, "Chat-Räume"),
+                        React.createElement('p', { className: "text-gray-600" }, "Demo-Chat (lokal gespeichert).")
+                    )
+                ),
+                React.createElement('div', { className: "mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm p-4" },
+                    React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "WhatsApp-Gruppen"),
+                    React.createElement('div', { className: "mt-2 flex flex-wrap gap-2" },
+                        React.createElement('a', {
+                            href: CONFIG.links.whatsappPrimary,
+                            className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
+                        }, "Hauptgruppe"),
+                        React.createElement('a', {
+                            href: CONFIG.links.whatsappDirect,
+                            className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
+                        }, "Direktchat")
+                    )
+                ),
+                React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+                    React.createElement('aside', { className: "md:col-span-1 space-y-2" },
+                        rooms.map((r) =>
+                            React.createElement('button', {
+                                key: r.id,
+                                onClick: () => setActive(r.id),
+                                className: `w-full text-left px-4 py-3 rounded-xl border shadow-sm ${active===r.id?"bg-black text-white border-black":"bg-white border-gray-200"}`
+                            },
+                                React.createElement('div', { className: "flex items-center justify-between" },
+                                    React.createElement('span', { className: "font-medium" }, r.name),
+                                    r.unread > 0 && React.createElement('span', { 
+                                        className: `text-xs ${active===r.id?"bg-white text-black":"bg-black text-white"} rounded-full px-2 py-0.5` 
+                                    }, r.unread)
+                                )
+                            )
+                        )
+                    ),
+                    React.createElement('main', { className: "md:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col h-[480px]" },
+                        React.createElement('div', { className: "flex-1 overflow-y-auto space-y-3 pr-1" },
+                            (messages[active]||[]).map(m =>
+                                React.createElement('div', { 
+                                    key: m.id, 
+                                    className: `max-w-[80%] ${m.user==="Ich"?"ml-auto":""}` 
+                                },
+                                    React.createElement('div', { 
+                                        className: `rounded-2xl px-4 py-2 border ${m.user==="Ich"?"bg-black text-white border-black":"bg-gray-50 border-gray-200"}` 
+                                    },
+                                        React.createElement('div', { className: "text-sm" },
+                                            React.createElement('span', { className: "font-semibold" }, m.user),
+                                            ": ",
+                                            m.text
+                                        ),
+                                        React.createElement('div', { className: "text-[10px] opacity-70 mt-1" }, 
+                                            new Date(m.ts).toLocaleString()
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: "mt-3 flex gap-2" },
+                            React.createElement('input', {
+                                value: input,
+                                onChange: (e) => setInput(e.target.value),
+                                placeholder: "Nachricht schreiben…",
+                                className: "flex-1 rounded-xl border border-gray-300 px-3 py-2"
+                            }),
+                            React.createElement('button', {
+                                onClick: send,
+                                className: "px-4 py-2 rounded-xl bg-black text-white text-sm shadow"
+                            }, "Senden")
+                        )
+                    )
+                )
+            );
+        }
+
+        function AlbumTab() {
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+                React.createElement('h2', { className: "text-3xl font-extrabold" }, "Bilderalbum"),
+                React.createElement('p', { className: "text-gray-600" }, "Gemeinsame Team-Fotos."),
+                React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+                    React.createElement('a', { 
+                        href: CONFIG.links.albumUrl, 
+                        className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
+                    },
+                        React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
+                        React.createElement('div', { className: "font-semibold mt-3" }, "Team-Album öffnen"),
+                        React.createElement('div', { className: "text-sm text-gray-600" }, "Nextcloud/SharePoint")
+                    ),
+                    React.createElement('a', { 
+                        href: "#", 
+                        className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
+                    },
+                        React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
+                        React.createElement('div', { className: "font-semibold mt-3" }, "Einsatz Fotos"),
+                        React.createElement('div', { className: "text-sm text-gray-600" }, "Beispielalbum")
+                    )
+                )
+            );
+        }
+
+        function FormsTab() {
+            const [query, setQuery] = useState("");
+            const items = CONFIG.forms.filter(f => (f.title+" "+(f.note||"")).toLowerCase().includes(query.toLowerCase()));
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+                React.createElement('h2', { className: "text-3xl font-extrabold" }, "Formulare"),
+                React.createElement('p', { className: "text-gray-600" }, "Schnelle Links zu Forms."),
+                React.createElement('div', { className: "mt-4 flex gap-2" },
+                    React.createElement('input', {
+                        value: query,
+                        onChange: (e) => setQuery(e.target.value),
+                        placeholder: "Suchen…",
+                        className: "rounded-xl border border-gray-300 px-3 py-2"
+                    })
+                ),
+                React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+                    items.map((f, i) =>
+                        React.createElement('a', {
+                            key: i,
+                            href: f.url,
+                            className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
+                        },
+                            React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Formular"),
+                            React.createElement('div', { className: "font-semibold mt-1" }, f.title),
+                            f.note && React.createElement('div', { className: "text-sm text-gray-600" }, f.note)
+                        )
+                    )
+                )
+            );
+        }
+
+        function FilesTab() {
+            const [query, setQuery] = useState("");
+            const [tags, setTags] = useState([]);
+            const allTags = useMemo(() => Array.from(new Set(CONFIG.documents.flatMap(d => d.tags||[]))), []);
+            const items = useMemo(() => CONFIG.documents.filter(d => {
+                const text = (d.title + " " + (d.tags||[]).join(" ")).toLowerCase();
+                const okText = text.includes(query.toLowerCase());
+                const okTags = tags.length ? tags.every(t => d.tags?.includes(t)) : true;
+                return okText && okTags;
+            }), [query, tags]);
+
+            function toggleTag(t) { setTags((prev) => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t]); }
+
+            return React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+                React.createElement('h2', { className: "text-3xl font-extrabold" }, "Dateien & Unterlagen"),
+                React.createElement('p', { className: "text-gray-600" }, "Wichtige Dokumente."),
+                React.createElement('div', { className: "mt-4 flex flex-wrap gap-2 items-center" },
+                    React.createElement('input', {
+                        value: query,
+                        onChange: (e) => setQuery(e.target.value),
+                        placeholder: "Suchen…",
+                        className: "rounded-xl border border-gray-300 px-3 py-2"
+                    }),
+                    React.createElement('div', { className: "flex gap-2 flex-wrap" },
+                        allTags.map(t =>
+                            React.createElement('button', {
+                                key: t,
+                                onClick: () => toggleTag(t),
+                                className: `px-3 py-1 rounded-full text-sm border ${tags.includes(t)?"bg-black text-white border-black":"bg-white border-gray-300"}`
+                            }, t)
+                        )
+                    )
+                ),
+                React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+                    items.map((d, i) =>
+                        React.createElement('a', {
+                            key: i,
+                            href: d.url,
+                            className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
+                        },
+                            React.createElement('div', { className: "h-20 rounded-xl bg-gray-100" }),
+                            React.createElement('div', { className: "font-semibold mt-3" }, d.title),
+                            React.createElement('div', { className: "text-sm text-gray-600" }, (d.tags||[]).join(" • "))
+                        )
+                    )
+                )
+            );
+        }
+
+        // ===================== HAUPTPAPP =====================
+
+        function HelferApp() {
+            const [tab, setTab] = useState("home");
+            const { user, login, logout } = useFakeAuth();
+
+            const TabButton = ({ id, label }) =>
+                React.createElement('button', {
+                    onClick: () => setTab(id),
+                    className: `px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border
+                        ${tab === id ? "bg-black text-white border-black" : "bg-white hover:bg-gray-50 border-gray-200"}`,
+                    'aria-pressed': tab === id
+                }, label);
+
+            return React.createElement('div', { className: "min-h-screen pb-24 bg-gradient-to-b from-gray-50 to-white text-gray-900" },
+                React.createElement('header', { className: "sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200" },
+                    React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between" },
+                        React.createElement('div', { className: "flex items-center gap-2" },
+                            React.createElement('div', { className: "h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold" }, 
+                                CONFIG.brand.logoLetter
+                            ),
+                            React.createElement('div', { className: "text-lg font-semibold tracking-tight" }, CONFIG.brand.name)
+                        ),
+                        React.createElement('nav', { className: "flex gap-2" },
+                            React.createElement(TabButton, { id: "home", label: "Start" }),
+                            React.createElement(TabButton, { id: "termine", label: "Termine" }),
+                            React.createElement(TabButton, { id: "chat", label: "Chat" }),
+                            React.createElement(TabButton, { id: "album", label: "Bilderalbum" }),
+                            React.createElement(TabButton, { id: "forms", label: "Formulare" }),
+                            React.createElement(TabButton, { id: "files", label: "Dateien" })
+                        ),
+                        React.createElement('div', { className: "hidden md:flex items-center gap-2" },
+                            user ? [
+                                React.createElement('span', { 
+                                    className: "text-sm text-gray-600", 
+                                    key: "greet" 
+                                }, "Hallo, ", user.name),
+                                React.createElement('button', { 
+                                    onClick: logout, 
+                                    className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50",
+                                    key: "logout"
+                                }, "Abmelden")
+                            ] : 
+                            React.createElement('button', {
+                                onClick: () => login("Helfer/in"),
+                                className: "px-3 py-2 rounded-xl bg-black text-white text-sm hover:bg-gray-800"
+                            }, "Anmelden")
+                        )
+                    )
+                ),
+                tab === "home" && React.createElement(HomeTab),
+                tab === "termine" && React.createElement(TermineTab),
+                tab === "chat" && React.createElement(ChatTab),
+                tab === "album" && React.createElement(AlbumTab),
+                tab === "forms" && React.createElement(FormsTab),
+                tab === "files" && React.createElement(FilesTab),
+                React.createElement(BottomDock),
+                React.createElement('footer', { className: "border-t border-gray-200 py-8 mt-10" },
+                    React.createElement('div', { className: "max-w-6xl mx-auto px-4 text-sm text-gray-500" },
+                        "© ", new Date().getFullYear(), " ", CONFIG.brand.name, ". Bereit für Einsatz & Übung."
+                    )
+                )
+            );
+        }
+
+        // App rendern (React 17 Syntax)
+        ReactDOM.render(React.createElement(HelferApp), document.getElementById('root'));
+    </script>
+
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(registration) {
+                        console.log('✅ ServiceWorker registriert');
+                    })
+                    .catch(function(err) {
+                        console.log('❌ ServiceWorker Fehler:', err);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
-
-
