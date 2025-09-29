@@ -1,6 +1,7 @@
 {
     "short_name": "Helfer",
     "name": "Helfer App",
+    "description": "Interne Helfer App für Team-Koordination",
     "icons": [
       {
         "src": "icon-192x192.png",
@@ -23,6 +24,7 @@
     "scope": "./",
     "categories": ["business", "productivity"]
   } 
+
 
 
 
