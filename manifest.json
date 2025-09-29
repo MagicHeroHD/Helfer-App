@@ -1,26 +1,27 @@
 {
     "short_name": "Helfer",
     "name": "Helfer App",
-    "description": "Interne Helfer App für Team-Koordination",
+    //"description": "Interne Helfer App für Team-Koordination",
     "icons": [
       {
         "src": "icon-192x192.png",
         "sizes": "192x192",
         "type": "image/png",
-        "purpose": "any maskable"
+        //"purpose": "any maskable"
       },
       {
         "src": "icon-512x512.png",
         "sizes": "512x512", 
         "type": "image/png",
-        "purpose": "any maskable"
+        //"purpose": "any maskable"
       }
     ],
     "start_url": "./",
     "display": "standalone",
     "theme_color": "#000000",
     "background_color": "#ffffff",
-    "orientation": "portrait",
-    "scope": "./",
-    "categories": ["business", "productivity"]
+    //"orientation": "portrait",
+    //"scope": "./",
+    //"categories": ["business", "productivity"]
   } 
+
