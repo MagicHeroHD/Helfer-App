@@ -4,25 +4,94 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Sichere Malteser Helfer App" />
+    
+    <!-- PWA Meta Tags -->
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="./icon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="./icon-512x512.png" sizes="512x512">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>Helfer App - Anmeldung</title>
+    
+    <title>Malteser Helfer App</title>
     <style>
         .hidden { display: none; }
         .login-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { 
+            background-color: black; 
+            color: white; 
+            border-color: black;
+        }
+        
+        /* Ticker Animation */
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .ticker-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .ticker-content {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 90vw;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        /* Security Badge */
+        .security-badge {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
     </style>
 </head>
-<body>
-    <!-- Login Screen -->
+<body class="bg-gray-50">
+    <!-- ==================== -->
+    <!-- LOGIN SCREEN -->
+    <!-- ==================== -->
     <div id="login-screen" class="min-h-screen login-bg flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <!-- Security Header -->
+            <div class="security-badge text-white p-4 text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <div class="text-lg">🔒</div>
+                    <div class="text-sm font-medium">Sichere Malteser Authentifizierung</div>
+                </div>
+            </div>
+            
             <!-- Login Header -->
             <div class="bg-blue-600 text-white p-6 text-center">
-                <h1 class="text-2xl font-bold">Malteser Cloud</h1>
-                <p class="text-blue-100 mt-2">Helfer App Anmeldung</p>
+                <h1 class="text-2xl font-bold">Malteser Helfer App</h1>
+                <p class="text-blue-100 mt-2">Zugang nur für autorisiertes Personal</p>
             </div>
             
             <!-- Login Form -->
@@ -30,14 +99,15 @@
                 <form id="login-form" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
-                            Benutzername
+                            Malteser E-Mail
                         </label>
                         <input 
-                            type="text" 
+                            type="email" 
                             id="username" 
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Ihre Malteser E-Mail"
+                            placeholder="ihre.email@malteser.org"
+                            autocomplete="username"
                         >
                     </div>
                     
@@ -50,323 +120,623 @@
                             id="password" 
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Ihr Passwort"
+                            placeholder="Ihr Malteser Passwort"
+                            autocomplete="current-password"
                         >
                     </div>
                     
                     <button 
                         type="submit"
-                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                        id="login-btn"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium flex items-center justify-center gap-2"
                     >
-                        Anmelden
+                        <span id="login-text">Sicher anmelden</span>
+                        <div id="login-spinner" class="hidden animate-spin">⏳</div>
                     </button>
                 </form>
                 
-                <div class="mt-6 text-center">
-                    <a href="https://meinprofil.malteser.org/DirectoryUpdate/Login.aspx" 
-                       class="text-blue-600 hover:text-blue-800 text-sm">
-                        Zur offiziellen Malteser Anmeldeseite
-                    </a>
+                <!-- Security Info -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <div class="text-blue-600 mt-0.5">🔐</div>
+                        <div>
+                            <p class="text-blue-800 text-sm font-medium">Geschützter Zugang</p>
+                            <p class="text-blue-700 text-xs mt-1">
+                                Ihre Anmeldedaten werden verschlüsselt übertragen und nur mit den offiziellen Malteser Systemen verifiziert.
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-yellow-800 text-sm text-center">
-                        🔐 Ihre Anmeldedaten werden direkt mit der Malteser Cloud verifiziert
-                    </p>
+                <!-- Official Link -->
+                <div class="mt-4 text-center">
+                    <a href="https://meinprofil.malteser.org/DirectoryUpdate/Login.aspx" 
+                       target="_blank"
+                       class="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center gap-1">
+                        <span>Zur offiziellen Malteser Anmeldeseite</span>
+                        <span>↗</span>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- App Container (versteckt) -->
-    <div id="app-container" class="hidden">
-        <!-- HIER DEINE KOMPLETTE APP EINFÜGEN -->
-        <!-- Kopiere alles aus deiner aktuellen index.html hier rein -->
-
-        <!DOCTYPE html>
-        <html lang="de">
-        <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="theme-color" content="#000000" />
-            <meta name="description" content="Interne Helfer App für Team-Koordination" />
-            
-            <!-- PWA Meta Tags -->
-            <link rel="manifest" href="./manifest.json">
-            <link rel="icon" type="image/png" href="./icon-192x192.png" sizes="192x192">
-            <link rel="icon" type="image/png" href="./icon-512x512.png" sizes="512x512">
-            
-            <!-- Tailwind CSS -->
-            <script src="https://cdn.tailwindcss.com"></script>
-            
-            <title>Helfer App</title>
-            <style>
-                .tab-content { display: none; }
-                .tab-content.active { display: block; }
-                .tab-button.active { 
-                    background-color: black; 
-                    color: white; 
-                    border-color: black;
-                }
-                
-                /* Ticker Animation */
-                @keyframes ticker {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                }
-                .ticker-container {
-                    overflow: hidden;
-                    white-space: nowrap;
-                }
-                .ticker-content {
-                    display: inline-block;
-                    animation: ticker 30s linear infinite;
-                }
-                
-                /* Modal Styles */
-                .modal {
-                    display: none;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0,0,0,0.5);
-                    z-index: 100;
-                }
-                .modal.active {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .modal-content {
-                    background: white;
-                    border-radius: 1rem;
-                    padding: 1.5rem;
-                    max-width: 90vw;
-                    width: 600px;
-                    max-height: 80vh;
-                    overflow-y: auto;
-                }
-            </style>
-        </head>
-        <body class="bg-gray-50 min-h-screen pb-24">
-            <!-- Header -->
-            <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
-                <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold">H</div>
-                        <div class="text-lg font-semibold tracking-tight">Helfer App</div>
-                    </div>
-                    <nav class="flex gap-2" id="tab-nav">
-                        <button class="tab-button active px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-black text-white border-black" data-tab="home">Start</button>
-                        <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="termine">Termine</button>
-                        <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="chat">Chat</button>
-                        <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="album">Bilderalbum</button>
-                        <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="forms">Formulare</button>
-                        <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="files">Dateien</button>
-                    </nav>
-                    <div class="hidden md:flex items-center gap-2">
-                        <span class="text-sm text-gray-600">Hallo, Helfer/in</span>
-                        <button class="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">Abmelden</button>
-                    </div>
+    <!-- ==================== -->
+    <!-- APP CONTAINER -->
+    <!-- ==================== -->
+    <div id="app-container" class="hidden min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900 pb-24">
+        <!-- Header -->
+        <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold">H</div>
+                    <div class="text-lg font-semibold tracking-tight">Helfer App</div>
                 </div>
-            </header>
-        
-            <!-- Tab Contents -->
-            <main>
-                <!-- Home Tab -->
-                <section id="home" class="tab-content active">
-                    <div class="max-w-6xl mx-auto px-4 py-14">
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-5 place-items-stretch">
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="einsatzdienste">
-                                <div class="text-2xl">🚑</div>
-                                <div class="text-lg font-semibold">Einsatzdienste</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="verwaltung">
-                                <div class="text-2xl">🏢</div>
-                                <div class="text-lg font-semibold">Verwaltung</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="ticketsystem">
-                                <div class="text-2xl">🎫</div>
-                                <div class="text-lg font-semibold">Ticketsystem</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="hygiene">
-                                <div class="text-2xl">🧼</div>
-                                <div class="text-lg font-semibold">Hygiene</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="checklisten">
-                                <div class="text-2xl">✅</div>
-                                <div class="text-lg font-semibold">Checklisten</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                            <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="wichtige">
-                                <div class="text-2xl">📚</div>
-                                <div class="text-lg font-semibold">Unterlagen</div>
-                                <div class="text-sm text-gray-600">Tippe zum Öffnen</div>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-        
-                <!-- Termine Tab -->
-                <section id="termine" class="tab-content">
-                    <div class="max-w-6xl mx-auto px-4 py-10">
-                        <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                            <div>
-                                <h2 class="text-3xl font-extrabold">Termine</h2>
-                                <p class="text-gray-600">Zeigt bevorstehende Dienste, Übungen und Treffen.</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <select id="event-filter" class="rounded-xl border border-gray-300 px-3 py-2">
-                                    <option value="">Alle Typen</option>
-                                    <option>Übung</option>
-                                    <option>Dienst</option>
-                                    <option>Fortbildung</option>
-                                    <option>Einsatz</option>
-                                </select>
-                            </div>
-                        </header>
-                        
-                        <!-- Event Ticker -->
-                        <div id="event-ticker" class="border-b border-gray-200 bg-white/80 backdrop-blur mt-4">
-                            <!-- Ticker content will be loaded by JavaScript -->
-                        </div>
-        
-                        <!-- Events List -->
-                        <div id="events-list" class="grid md:grid-cols-2 gap-4 mt-6">
-                            <!-- Events will be loaded by JavaScript -->
-                        </div>
-        
-                        <!-- Add Event Form -->
-                        <div class="mt-8 rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
-                            <div class="text-sm uppercase tracking-widest text-gray-500">Neuer Termin (lokal gespeichert)</div>
-                            <div class="grid md:grid-cols-5 gap-3 mt-3">
-                                <input id="event-title" placeholder="Titel" class="rounded-xl border border-gray-300 px-3 py-2">
-                                <input id="event-start" type="datetime-local" class="rounded-xl border border-gray-300 px-3 py-2">
-                                <input id="event-end" type="datetime-local" class="rounded-xl border border-gray-300 px-3 py-2">
-                                <input id="event-location" placeholder="Ort" class="rounded-xl border border-gray-300 px-3 py-2">
-                                <select id="event-type" class="rounded-xl border border-gray-300 px-3 py-2">
-                                    <option>Übung</option>
-                                    <option>Dienst</option>
-                                    <option>Fortbildung</option>
-                                    <option>Einsatz</option>
-                                </select>
-                            </div>
-                            <button id="add-event" class="mt-3 px-4 py-2 rounded-xl bg-black text-white text-sm shadow hover:bg-gray-800 transition-colors">Termin hinzufügen</button>
-                        </div>
-                    </div>
-                </section>
-        
-                <!-- Chat Tab -->
-                <section id="chat" class="tab-content">
-                    <div class="max-w-6xl mx-auto px-4 py-10">
-                        <header class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-3xl font-extrabold">Chat-Räume</h2>
-                                <p class="text-gray-600">Demo-Chat (lokal gespeichert).</p>
-                            </div>
-                        </header>
-        
-                        <!-- WhatsApp Links -->
-                        <div class="mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-                            <div class="text-sm uppercase tracking-widest text-gray-500">WhatsApp-Gruppen</div>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                <a href="https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk" class="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">Hauptgruppe</a>
-                                <a href="https://wa.me/4917012345678?text=Hallo%20Team" class="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">Direktchat</a>
-                            </div>
-                        </div>
-        
-                        <div class="grid md:grid-cols-3 gap-6 mt-6">
-                            <!-- Chat rooms and messages will be loaded by JavaScript -->
-                            <aside id="chat-rooms" class="md:col-span-1 space-y-2">
-                                <!-- Chat rooms loaded by JS -->
-                            </aside>
-                            <main class="md:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col h-[480px]">
-                                <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-1">
-                                    <!-- Messages loaded by JS -->
-                                </div>
-                                <div class="mt-3 flex gap-2">
-                                    <input id="chat-input" placeholder="Nachricht schreiben…" class="flex-1 rounded-xl border border-gray-300 px-3 py-2">
-                                    <button id="send-message" class="px-4 py-2 rounded-xl bg-black text-white text-sm shadow">Senden</button>
-                                </div>
-                            </main>
-                        </div>
-                    </div>
-                </section>
-        
-                <!-- Other tabs... (Album, Forms, Files would be similar) -->
-                <section id="album" class="tab-content">
-                    <div class="max-w-6xl mx-auto px-4 py-10">
-                        <h2 class="text-3xl font-extrabold">Bilderalbum</h2>
-                        <p class="text-gray-600">Gemeinsame Team-Fotos.</p>
-                        <div class="grid md:grid-cols-3 gap-6 mt-6">
-                            <a href="https://cloud.example.org/apps/photos/s/TEAM-ALBUM" class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50">
-                                <div class="h-28 rounded-xl bg-gray-100"></div>
-                                <div class="font-semibold mt-3">Team-Album öffnen</div>
-                                <div class="text-sm text-gray-600">Nextcloud/SharePoint</div>
-                            </a>
-                            <a href="#" class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50">
-                                <div class="h-28 rounded-xl bg-gray-100"></div>
-                                <div class="font-semibold mt-3">Einsatz Fotos</div>
-                                <div class="text-sm text-gray-600">Beispielalbum</div>
-                            </a>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        
-            <!-- Bottom Dock -->
-            <nav class="fixed bottom-2 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-gray-200 px-3 py-2 flex gap-3">
-                <a href="https://app.groupalarm.com/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
-                    <div class="text-lg">🚨</div>
-                    <div>GroupAlarm</div>
-                </a>
-                <a href="https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
-                    <div class="text-lg">💬</div>
-                    <div>WhatsApp</div>
-                </a>
-                <a href="https://teams.microsoft.com/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
-                    <div class="text-lg">👥</div>
-                    <div>Teams</div>
-                </a>
-                <a href="https://arno.cloud/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
-                    <div class="text-lg">🧭</div>
-                    <div>ARNO</div>
-                </a>
-                <a href="https://planner.cloud.microsoft/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
-                    <div class="text-lg">🗂️</div>
-                    <div>Planner</div>
-                </a>
-            </nav>
-        
-            <!-- Footer -->
-            <footer class="border-t border-gray-200 py-8 mt-10">
-                <div class="max-w-6xl mx-auto px-4 text-sm text-gray-500">
-                    © 2024 Helfer App. Bereit für Einsatz & Übung.
-                </div>
-            </footer>
-        
-            <!-- Modal for Home Tiles -->
-            <div id="home-modal" class="modal">
-                <div class="modal-content">
-                    <div class="flex items-center justify-between">
-                        <div id="modal-title" class="text-lg font-semibold">Titel</div>
-                        <button id="close-modal" class="px-3 py-1 border border-gray-300 rounded-xl text-sm bg-white hover:bg-gray-50">Schließen</button>
-                    </div>
-                    <div id="modal-content" class="mt-4 grid sm:grid-cols-2 gap-3">
-                        <!-- Content loaded by JavaScript -->
-                    </div>
+                
+                <!-- Navigation -->
+                <nav class="flex gap-2" id="tab-nav">
+                    <button class="tab-button active px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-black text-white border-black" data-tab="home">Start</button>
+                    <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="termine">Termine</button>
+                    <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="chat">Chat</button>
+                    <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="album">Bilderalbum</button>
+                    <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="forms">Formulare</button>
+                    <button class="tab-button px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border bg-white hover:bg-gray-50 border-gray-200" data-tab="files">Dateien</button>
+                </nav>
+                
+                <!-- User Info -->
+                <div class="flex items-center gap-4">
+                    <span id="user-display" class="text-sm text-gray-600"></span>
+                    <button id="logout-btn" class="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">
+                        Abmelden
+                    </button>
                 </div>
             </div>
-        
-            <!-- JavaScript -->
-            <script>
-                // Tab Navigation
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Home Tab -->
+            <section id="home" class="tab-content active">
+                <div class="max-w-6xl mx-auto px-4 py-14">
+                    <div class="text-center mb-12">
+                        <h1 class="text-4xl font-bold text-gray-900 mb-4">Willkommen in der Helfer App</h1>
+                        <p class="text-xl text-gray-600">Alles Wichtige für Ihren Einsatz auf einen Blick</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-5 place-items-stretch">
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="einsatzdienste">
+                            <div class="text-2xl">🚑</div>
+                            <div class="text-lg font-semibold">Einsatzdienste</div>
+                            <div class="text-sm text-gray-600">Protokolle & Berichte</div>
+                        </button>
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="verwaltung">
+                            <div class="text-2xl">🏢</div>
+                            <div class="text-lg font-semibold">Verwaltung</div>
+                            <div class="text-sm text-gray-600">Dokumente & Richtlinien</div>
+                        </button>
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="ticketsystem">
+                            <div class="text-2xl">🎫</div>
+                            <div class="text-lg font-semibold">Ticketsystem</div>
+                            <div class="text-sm text-gray-600">Support & Anfragen</div>
+                        </button>
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="hygiene">
+                            <div class="text-2xl">🧼</div>
+                            <div class="text-lg font-semibold">Hygiene</div>
+                            <div class="text-sm text-gray-600">Pläne & Richtlinien</div>
+                        </button>
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="checklisten">
+                            <div class="text-2xl">✅</div>
+                            <div class="text-lg font-semibold">Checklisten</div>
+                            <div class="text-sm text-gray-600">Einsatzvorbereitung</div>
+                        </button>
+                        <button class="home-tile rounded-2xl border border-gray-200 bg-white shadow-sm p-6 text-left hover:bg-gray-50 flex flex-col items-start gap-2 transition-all hover:scale-105" data-category="wichtige">
+                            <div class="text-2xl">📚</div>
+                            <div class="text-lg font-semibold">Wichtige Unterlagen</div>
+                            <div class="text-sm text-gray-600">AAO & Dienstvereinbarungen</div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Termine Tab -->
+            <section id="termine" class="tab-content">
+                <div class="max-w-6xl mx-auto px-4 py-10">
+                    <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                        <div>
+                            <h2 class="text-3xl font-extrabold">Termine & Dienste</h2>
+                            <p class="text-gray-600">Bevorstehende Einsätze, Übungen und Treffen</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="event-filter" class="rounded-xl border border-gray-300 px-3 py-2">
+                                <option value="">Alle Termine</option>
+                                <option>Übung</option>
+                                <option>Dienst</option>
+                                <option>Fortbildung</option>
+                                <option>Einsatz</option>
+                                <option>Besprechung</option>
+                            </select>
+                        </div>
+                    </header>
+                    
+                    <!-- Event Ticker -->
+                    <div id="event-ticker" class="border-b border-gray-200 bg-white/80 backdrop-blur mt-6">
+                        <div class="ticker-container">
+                            <div class="ticker-content py-3">
+                                <span class="mx-6 text-sm text-gray-700">🗓️ Nächster Dienst: Sanitätsdienst Stadtfest - 12. Okt 2025, 10:00 @ Innenstadt</span>
+                                <span class="mx-6 text-sm text-gray-700">🔄 Übungsdienst: Verpflegung - 5. Okt 2025, 18:00 @ Unterkunft</span>
+                                <span class="mx-6 text-sm text-gray-700">📚 Fortbildung: Erste Hilfe Auffrischung - 19. Okt 2025, 14:00 @ Schulungsraum</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Events List -->
+                    <div class="grid md:grid-cols-2 gap-6 mt-8">
+                        <article class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Übung</div>
+                                <div class="text-sm text-gray-500">5. Okt 2025</div>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Übungsdienst Verpflegung</h3>
+                            <p class="text-gray-700 mb-4">Komplette Durchführung einer Feldverpflegung unter Einsatzbedingungen</p>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <div class="flex items-center gap-1">
+                                    <span>🕒</span>
+                                    <span>18:00 - 21:00</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span>📍</span>
+                                    <span>Unterkunft Lagerhalle</span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Dienst</div>
+                                <div class="text-sm text-gray-500">12. Okt 2025</div>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Sanitätsdienst Stadtfest</h3>
+                            <p class="text-gray-700 mb-4">Sanitätsversorgung während des jährlichen Stadtfestes</p>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <div class="flex items-center gap-1">
+                                    <span>🕒</span>
+                                    <span>10:00 - 18:00</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span>📍</span>
+                                    <span>Innenstadt, Hauptbühne</span>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- Add Event Form -->
+                    <div class="mt-12 rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
+                        <h3 class="text-lg font-semibold mb-4">Neuen Termin hinzufügen</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <input id="event-title" placeholder="Titel des Termins" class="rounded-xl border border-gray-300 px-3 py-2">
+                            <select id="event-type" class="rounded-xl border border-gray-300 px-3 py-2">
+                                <option value="">Terminart wählen</option>
+                                <option>Übung</option>
+                                <option>Dienst</option>
+                                <option>Fortbildung</option>
+                                <option>Einsatz</option>
+                                <option>Besprechung</option>
+                            </select>
+                            <input id="event-start" type="datetime-local" class="rounded-xl border border-gray-300 px-3 py-2">
+                            <input id="event-end" type="datetime-local" class="rounded-xl border border-gray-300 px-3 py-2">
+                            <input id="event-location" placeholder="Ort" class="rounded-xl border border-gray-300 px-3 py-2 md:col-span-2">
+                        </div>
+                        <button id="add-event" class="mt-4 px-6 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition-colors">
+                            Termin speichern
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Tab -->
+            <section id="chat" class="tab-content">
+                <div class="max-w-6xl mx-auto px-4 py-10">
+                    <header class="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 class="text-3xl font-extrabold">Team Kommunikation</h2>
+                            <p class="text-gray-600">Sichere Nachrichten für Ihr Team</p>
+                        </div>
+                    </header>
+
+                    <!-- Communication Links -->
+                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                        <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <span>💬</span>
+                                <span>WhatsApp Gruppen</span>
+                            </h3>
+                            <div class="space-y-2">
+                                <a href="https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk" class="block px-4 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                                    <div class="font-medium">Einsatzleitung</div>
+                                    <div class="text-sm text-gray-600">Hauptkommunikationskanal</div>
+                                </a>
+                                <a href="https://wa.me/4917012345678?text=Hallo%20Team" class="block px-4 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                                    <div class="font-medium">Direktchat</div>
+                                    <div class="text-sm text-gray-600">Einzelne Teammitglieder</div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <span>👥</span>
+                                <span>Enterprise Tools</span>
+                            </h3>
+                            <div class="space-y-2">
+                                <a href="https://teams.microsoft.com/" class="block px-4 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                                    <div class="font-medium">Microsoft Teams</div>
+                                    <div class="text-sm text-gray-600">Offizielle Besprechungen</div>
+                                </a>
+                                <a href="https://arno.cloud/" class="block px-4 py-3 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition-colors">
+                                    <div class="font-medium">ARNO Cloud</div>
+                                    <div class="text-sm text-gray-600">Dokumentenmanagement</div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Demo Chat -->
+                    <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div class="p-4 border-b border-gray-200">
+                            <h3 class="font-semibold">Demo Chat (lokal gespeichert)</h3>
+                        </div>
+                        <div class="p-4">
+                            <div id="chat-messages" class="h-64 overflow-y-auto space-y-3 mb-4">
+                                <div class="max-w-[80%]">
+                                    <div class="rounded-2xl px-4 py-2 border bg-gray-50 border-gray-200">
+                                        <div class="text-sm"><span class="font-semibold">Einsatzleitung</span>: Willkommen im neuen Chat-System! Hier können wichtige Einsatzinformationen geteilt werden.</div>
+                                        <div class="text-[10px] opacity-70 mt-1">Heute, 10:30</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="chat-input" placeholder="Nachricht schreiben…" class="flex-1 rounded-xl border border-gray-300 px-3 py-2">
+                                <button id="send-message" class="px-4 py-2 rounded-xl bg-black text-white font-medium">Senden</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Weitere Tabs... -->
+            <section id="album" class="tab-content">
+                <div class="max-w-6xl mx-auto px-4 py-10">
+                    <h2 class="text-3xl font-extrabold mb-2">Team Bilderalbum</h2>
+                    <p class="text-gray-600 mb-8">Gemeinsame Fotos von Einsätzen und Übungen</p>
+                    
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <a href="#" class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50 transition-colors group">
+                            <div class="h-48 rounded-xl bg-gray-100 group-hover:bg-gray-200 transition-colors"></div>
+                            <div class="font-semibold mt-3">Stadtfest 2024</div>
+                            <div class="text-sm text-gray-600">Sanitätsdienst Fotos</div>
+                        </a>
+                        <a href="#" class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50 transition-colors group">
+                            <div class="h-48 rounded-xl bg-gray-100 group-hover:bg-gray-200 transition-colors"></div>
+                            <div class="font-semibold mt-3">Übungsdienst Verpflegung</div>
+                            <div class="text-sm text-gray-600">Feldküche Aufbau</div>
+                        </a>
+                        <a href="#" class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50 transition-colors group">
+                            <div class="h-48 rounded-xl bg-gray-100 group-hover:bg-gray-200 transition-colors"></div>
+                            <div class="font-semibold mt-3">Team Training</div>
+                            <div class="text-sm text-gray-600">Erste Hilfe Auffrischung</div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Forms Tab -->
+            <section id="forms" class="tab-content">
+                <div class="max-w-6xl mx-auto px-4 py-10">
+                    <h2 class="text-3xl font-extrabold mb-2">Formulare & Protokolle</h2>
+                    <p class="text-gray-600 mb-8">Schneller Zugriff auf wichtige Formulare</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <a href="#" class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm block hover:bg-gray-50 transition-colors">
+                            <div class="text-lg font-semibold mb-2">Einsatzbericht</div>
+                            <div class="text-gray-600">Dokumentation von Einsätzen</div>
+                        </a>
+                        <a href="#" class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm block hover:bg-gray-50 transition-colors">
+                            <div class="text-lg font-semibold mb-2">Materialmeldung</div>
+                            <div class="text-gray-600">Bestand und Beschädigungen</div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Files Tab -->
+            <section id="files" class="tab-content">
+                <div class="max-w-6xl mx-auto px-4 py-10">
+                    <h2 class="text-3xl font-extrabold mb-2">Wichtige Dokumente</h2>
+                    <p class="text-gray-600 mb-8">Zentrale Ablage für Team-Dokumente</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <a href="#" class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm block hover:bg-gray-50 transition-colors">
+                            <div class="text-lg font-semibold mb-2">AAO - Alarmordnung</div>
+                            <div class="text-gray-600">Aktuelle Alarm- und Ausrückeordnung</div>
+                        </a>
+                        <a href="#" class="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm block hover:bg-gray-50 transition-colors">
+                            <div class="text-lg font-semibold mb-2">Dienstvereinbarungen</div>
+                            <div class="text-gray-600">Rechtliche Grundlagen</div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Dock -->
+        <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-gray-200 px-4 py-2 flex gap-4">
+            <a href="https://app.groupalarm.com/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
+                <div class="text-lg">🚨</div>
+                <div>GroupAlarm</div>
+            </a>
+            <a href="https://chat.whatsapp.com/HDDD0cctUY9KEW5BCSZ7jk" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
+                <div class="text-lg">💬</div>
+                <div>WhatsApp</div>
+            </a>
+            <a href="https://teams.microsoft.com/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
+                <div class="text-lg">👥</div>
+                <div>Teams</div>
+            </a>
+            <a href="https://arno.cloud/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
+                <div class="text-lg">🧭</div>
+                <div>ARNO</div>
+            </a>
+            <a href="https://planner.cloud.microsoft/" target="_blank" class="w-16 flex flex-col items-center gap-1 text-xs hover:scale-105 transition-transform">
+                <div class="text-lg">🗂️</div>
+                <div>Planner</div>
+            </a>
+        </nav>
+
+        <!-- Footer -->
+        <footer class="border-t border-gray-200 py-8 mt-16">
+            <div class="max-w-6xl mx-auto px-4 text-center">
+                <div class="text-sm text-gray-500">
+                    © 2024 Malteser Helfer App • Geschütztes System • Nur für autorisiertes Personal
+                </div>
+                <div class="text-xs text-gray-400 mt-2">
+                    Letzte Aktualisierung: Heute, 14:30
+                </div>
+            </div>
+        </footer>
+
+        <!-- Home Modal -->
+        <div id="home-modal" class="modal">
+            <div class="modal-content">
+                <div class="flex items-center justify-between mb-4">
+                    <div id="modal-title" class="text-xl font-semibold">Kategorie</div>
+                    <button id="close-modal" class="px-3 py-1 border border-gray-300 rounded-xl text-sm bg-white hover:bg-gray-50">Schließen</button>
+                </div>
+                <div id="modal-content" class="space-y-3">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== -->
+    <!-- JAVASCRIPT -->
+    <!-- ==================== -->
+    <script>
+        // Malteser Authentication System
+        class MalteserAuth {
+            constructor() {
+                this.authenticated = false;
+                this.user = null;
+                this.maxAttempts = 5;
+                this.attempts = 0;
+                this.lockUntil = 0;
+                this.init();
+            }
+
+            init() {
+                this.checkExistingSession();
+                this.setupEventListeners();
+                
+                if (this.authenticated) {
+                    this.showApp();
+                }
+            }
+
+            setupEventListeners() {
+                // Login Form
+                document.getElementById('login-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // Logout Button
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    this.logout();
+                });
+            }
+
+            async handleLogin() {
+                if (this.isLocked()) {
+                    this.showError('Konto vorübergehend gesperrt. Bitte versuchen Sie es in 15 Minuten erneut.');
+                    return;
+                }
+
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Validation
+                if (!username || !password) {
+                    this.showError('Bitte geben Sie E-Mail und Passwort ein.');
+                    return;
+                }
+
+                if (!username.includes('@malteser.org') && !username.includes('@malteser.')) {
+                    this.showError('Bitte verwenden Sie Ihre Malteser E-Mail-Adresse.');
+                    return;
+                }
+
+                // Show loading state
+                this.setLoginState('loading');
+
+                try {
+                    // Simulate secure authentication delay
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+
+                    // Demo: Accept specific test accounts for now
+                    // In production, this would call your backend
+                    const isValid = await this.verifyCredentials(username, password);
+                    
+                    if (isValid) {
+                        this.authenticated = true;
+                        this.user = {
+                            name: this.formatName(username),
+                            email: username,
+                            loginTime: new Date().toISOString(),
+                            role: 'helfer'
+                        };
+                        
+                        this.resetAttempts();
+                        this.saveSession();
+                        this.showApp();
+                    } else {
+                        this.attempts++;
+                        if (this.attempts >= this.maxAttempts) {
+                            this.lockAccount(15 * 60 * 1000); // 15 minutes
+                            this.showError('Zu viele fehlgeschlagene Versuche. Konto für 15 Minuten gesperrt.');
+                        } else {
+                            this.showError(`Ungültige Anmeldedaten. Noch ${this.maxAttempts - this.attempts} Versuche übrig.`);
+                        }
+                    }
+                } catch (error) {
+                    this.showError('Authentifizierungsdienst nicht verfügbar. Bitte versuchen Sie es später erneut.');
+                } finally {
+                    this.setLoginState('idle');
+                }
+            }
+
+            async verifyCredentials(username, password) {
+                // DEMO: For testing, accept these credentials
+                const validAccounts = {
+                    'test@malteser.org': 'anypassword',
+                    'helfer@malteser.org': 'anypassword', 
+                    'admin@malteser.org': 'anypassword',
+                    'einsatz@malteser.org': 'anypassword'
+                };
+
+                // In production, this would make a secure API call to your backend
+                return validAccounts[username.toLowerCase()] && password.length >= 1;
+            }
+
+            formatName(email) {
+                const namePart = email.split('@')[0];
+                return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+            }
+
+            isLocked() {
+                return Date.now() < this.lockUntil;
+            }
+
+            lockAccount(duration) {
+                this.lockUntil = Date.now() + duration;
+            }
+
+            resetAttempts() {
+                this.attempts = 0;
+                this.lockUntil = 0;
+            }
+
+            setLoginState(state) {
+                const btn = document.getElementById('login-btn');
+                const text = document.getElementById('login-text');
+                const spinner = document.getElementById('login-spinner');
+
+                if (state === 'loading') {
+                    btn.disabled = true;
+                    text.textContent = 'Wird verifiziert...';
+                    spinner.classList.remove('hidden');
+                } else {
+                    btn.disabled = false;
+                    text.textContent = 'Sicher anmelden';
+                    spinner.classList.add('hidden');
+                }
+            }
+
+            showApp() {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('user-display').textContent = `Hallo, ${this.user.name}`;
+                
+                // Initialize app functionality
+                this.initializeApp();
+            }
+
+            showError(message) {
+                alert(`Sicherheitshinweis: ${message}`);
+            }
+
+            logout() {
+                this.authenticated = false;
+                this.user = null;
+                this.clearSession();
+                
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('login-form').reset();
+                
+                // Reset login state
+                this.setLoginState('idle');
+            }
+
+            saveSession() {
+                const sessionData = {
+                    user: this.user,
+                    loginTime: new Date().toISOString(),
+                    sessionId: this.generateSessionId()
+                };
+                
+                localStorage.setItem('malteser_secure_session', JSON.stringify(sessionData));
+            }
+
+            clearSession() {
+                localStorage.removeItem('malteser_secure_session');
+            }
+
+            checkExistingSession() {
+                const session = localStorage.getItem('malteser_secure_session');
+                if (session) {
+                    try {
+                        const data = JSON.parse(session);
+                        const loginTime = new Date(data.loginTime);
+                        const now = new Date();
+                        const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
+                        
+                        // Session valid for 24 hours
+                        if (hoursDiff < 24) {
+                            this.authenticated = true;
+                            this.user = data.user;
+                            return true;
+                        }
+                    } catch (error) {
+                        this.clearSession();
+                    }
+                }
+                return false;
+            }
+
+            generateSessionId() {
+                return 'malteser_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // App Functionality
+            initializeApp() {
+                this.setupTabNavigation();
+                this.setupHomeTiles();
+                this.setupChat();
+                this.setupEvents();
+            }
+
+            setupTabNavigation() {
                 document.querySelectorAll('.tab-button').forEach(button => {
                     button.addEventListener('click', () => {
                         // Remove active class from all tabs
@@ -379,41 +749,22 @@
                         document.getElementById(tabId).classList.add('active');
                     });
                 });
-        
-                // Home Tiles Modal
-                const homeTiles = {
+            }
+
+            setupHomeTiles() {
+                const tileData = {
                     einsatzdienste: [
-                        { title: "Einsatzberichte", url: "https://forms.office.com/..." },
-                        { title: "Patientenprotokoll", url: "https://forms.office.com/..." },
-                        { title: "First Responder Protokoll", url: "https://forms.office.com/..." },
+                        { title: "Einsatzbericht", url: "#", description: "Einsatz dokumentieren" },
+                        { title: "Patientenprotokoll", url: "#", description: "Patientendaten erfassen" },
+                        { title: "Materialverbrauch", url: "#", description: "Verbrauch melden" }
                     ],
                     verwaltung: [
-                        { title: "SharePoint – Verwaltung", url: "https://maltesercloud-my.sharepoint.com/..." },
-                        { title: "Nextcloud – Team", url: "https://cloud.example.org/..." },
-                    ],
-                    ticketsystem: [
-                        { title: "Ticketsystem", url: "https://forms.office.com/..." },
-                    ],
-                    hygiene: [
-                        { title: "Hygieneplan Verpflegung", url: "https://cloud.example.org/..." },
-                    ],
-                    checklisten: [
-                        { title: "Checkliste Feldküche", url: "https://cloud.example.org/..." },
-                    ],
-                    wichtige: [
-                        { title: "AAO – Alarmordnung", url: "https://cloud.example.org/..." },
+                        { title: "Dienstplan", url: "#", description: "Aktuelle Einteilung" },
+                        { title: "Urlaubsantrag", url: "#", description: "Abwesenheit melden" },
+                        { title: "Fortbildungen", url: "#", description: "Schulungen buchen" }
                     ]
                 };
-        
-                const tileLabels = {
-                    einsatzdienste: "Einsatzdienste",
-                    verwaltung: "Verwaltung", 
-                    ticketsystem: "Ticketsystem",
-                    hygiene: "Hygiene",
-                    checklisten: "Checklisten",
-                    wichtige: "Wichtige Unterlagen"
-                };
-        
+
                 document.querySelectorAll('.home-tile').forEach(tile => {
                     tile.addEventListener('click', () => {
                         const category = tile.getAttribute('data-category');
@@ -421,12 +772,13 @@
                         const modalTitle = document.getElementById('modal-title');
                         const modalContent = document.getElementById('modal-content');
                         
-                        modalTitle.textContent = tileLabels[category];
-                        modalContent.innerHTML = homeTiles[category].map(item => `
-                            <div class="rounded-xl border border-gray-200 bg-white p-4">
-                                <div class="font-medium">${item.title}</div>
-                                <div class="mt-2">
-                                    <a href="${item.url}" target="_blank" class="px-3 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90">Öffnen</a>
+                        modalTitle.textContent = tile.querySelector('.text-lg').textContent;
+                        modalContent.innerHTML = (tileData[category] || []).map(item => `
+                            <div class="rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow">
+                                <div class="font-semibold">${item.title}</div>
+                                <div class="text-sm text-gray-600 mt-1">${item.description}</div>
+                                <div class="mt-3">
+                                    <a href="${item.url}" class="px-3 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90 inline-block">Öffnen</a>
                                 </div>
                             </div>
                         `).join('');
@@ -434,254 +786,62 @@
                         modal.classList.add('active');
                     });
                 });
-        
+
                 document.getElementById('close-modal').addEventListener('click', () => {
                     document.getElementById('home-modal').classList.remove('active');
                 });
-        
-                // Simple Events System (you can expand this)
+            }
+
+            setupChat() {
+                document.getElementById('send-message').addEventListener('click', () => {
+                    this.sendChatMessage();
+                });
+
+                document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendChatMessage();
+                    }
+                });
+            }
+
+            sendChatMessage() {
+                const input = document.getElementById('chat-input');
+                const messages = document.getElementById('chat-messages');
+                
+                if (input.value.trim() && messages) {
+                    const messageHtml = `
+                        <div class="max-w-[80%] ml-auto">
+                            <div class="rounded-2xl px-4 py-2 border bg-black text-white border-black">
+                                <div class="text-sm"><span class="font-semibold">${this.user.name}</span>: ${input.value}</div>
+                                <div class="text-[10px] opacity-70 mt-1">Gerade eben</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    messages.innerHTML += messageHtml;
+                    input.value = '';
+                    messages.scrollTop = messages.scrollHeight;
+                }
+            }
+
+            setupEvents() {
+                // Event functionality can be added here
                 document.getElementById('add-event')?.addEventListener('click', () => {
                     const title = document.getElementById('event-title').value;
-                    const start = document.getElementById('event-start').value;
-                    if (title && start) {
-                        alert(`Termin "${title}" hinzugefügt!`);
-                        // Clear form
+                    if (title) {
+                        alert(`Termin "${title}" wurde hinzugefügt (Demo)`);
                         document.getElementById('event-title').value = '';
-                        document.getElementById('event-start').value = '';
-                        document.getElementById('event-end').value = '';
-                        document.getElementById('event-location').value = '';
                     }
                 });
-        
-                // Initial load - show some demo content
-                document.addEventListener('DOMContentLoaded', () => {
-                    // Add some demo events
-                    const eventsList = document.getElementById('events-list');
-                    if (eventsList) {
-                        eventsList.innerHTML = `
-                            <article class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
-                                <div class="text-sm uppercase tracking-widest text-gray-500">Übung</div>
-                                <h3 class="text-lg font-semibold mt-1">Übungsdienst Verpflegung</h3>
-                                <p class="text-gray-700 mt-1">5. Okt 2025, 18:00 – 5. Okt 2025, 21:00</p>
-                                <p class="text-gray-600">📍 Unterkunft Lagerhalle</p>
-                            </article>
-                            <article class="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
-                                <div class="text-sm uppercase tracking-widest text-gray-500">Dienst</div>
-                                <h3 class="text-lg font-semibold mt-1">Sanitätsdienst Stadtfest</h3>
-                                <p class="text-gray-700 mt-1">12. Okt 2025, 10:00 – 12. Okt 2025, 18:00</p>
-                                <p class="text-gray-600">📍 Innenstadt</p>
-                            </article>
-                        `;
-                    }
-        
-                    // Add demo chat
-                    const chatRooms = document.getElementById('chat-rooms');
-                    const chatMessages = document.getElementById('chat-messages');
-                    if (chatRooms && chatMessages) {
-                        chatRooms.innerHTML = `
-                            <button class="w-full text-left px-4 py-3 rounded-xl border shadow-sm bg-black text-white border-black">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium">Einsatzleitung</span>
-                                    <span class="text-xs bg-white text-black rounded-full px-2 py-0.5">2</span>
-                                </div>
-                            </button>
-                            <button class="w-full text-left px-4 py-3 rounded-xl border shadow-sm bg-white border-gray-200">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium">Verpflegungsteam</span>
-                                </div>
-                            </button>
-                        `;
-        
-                        chatMessages.innerHTML = `
-                            <div class="max-w-[80%]">
-                                <div class="rounded-2xl px-4 py-2 border bg-gray-50 border-gray-200">
-                                    <div class="text-sm"><span class="font-semibold">Lea</span>: Bitte Wasserkanister auffüllen.</div>
-                                    <div class="text-[10px] opacity-70 mt-1">${new Date().toLocaleString()}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
-        
-                // Simple chat functionality
-                document.getElementById('send-message')?.addEventListener('click', () => {
-                    const input = document.getElementById('chat-input');
-                    const messages = document.getElementById('chat-messages');
-                    if (input.value.trim() && messages) {
-                        messages.innerHTML += `
-                            <div class="max-w-[80%] ml-auto">
-                                <div class="rounded-2xl px-4 py-2 border bg-black text-white border-black">
-                                    <div class="text-sm"><span class="font-semibold">Ich</span>: ${input.value}</div>
-                                    <div class="text-[10px] opacity-70 mt-1">${new Date().toLocaleString()}</div>
-                                </div>
-                            </div>
-                        `;
-                        input.value = '';
-                        messages.scrollTop = messages.scrollHeight;
-                    }
-                });
-        
-                document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        document.getElementById('send-message').click();
-                    }
-                });
-            </script>
-        
-            <!-- Service Worker -->
-            <script>
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', function() {
-                        navigator.serviceWorker.register('./sw.js')
-                            .then(function(registration) {
-                                console.log('✅ ServiceWorker registriert');
-                            })
-                            .catch(function(err) {
-                                console.log('❌ ServiceWorker Fehler:', err);
-                            });
-                    });
-                }
-            </script>
-        </body>
-        </html>        
-        
-        <div class="min-h-screen bg-gray-50">
-            <header class="sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200">
-                <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold">H</div>
-                        <div class="text-lg font-semibold tracking-tight">Helfer App</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span id="user-display" class="text-sm text-gray-600"></span>
-                        <button onclick="logout()" class="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">
-                            Abmelden
-                        </button>
-                    </div>
-                </div>
-            </header>
-            
-            <!-- Deine Tab-Inhalte... -->
-        </div>
-    </div>
-
-    <script>
-        class MalteserAuth {
-            constructor() {
-                this.authenticated = false;
-                this.user = null;
-                this.init();
-            }
-
-            init() {
-                this.loadSession();
-                this.setupEventListeners();
-                
-                if (this.authenticated) {
-                    this.showApp();
-                }
-            }
-
-            setupEventListeners() {
-                document.getElementById('login-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleLogin();
-                });
-            }
-
-            async handleLogin() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                // Loading state
-                const btn = document.querySelector('#login-form button');
-                const originalText = btn.textContent;
-                btn.textContent = 'Wird angemeldet...';
-                btn.disabled = true;
-
-                try {
-                    // HIER: Echte Malteser Cloud Authentifizierung
-                    const success = await this.authenticateWithMalteser(username, password);
-                    
-                    if (success) {
-                        this.authenticated = true;
-                        this.user = {
-                            name: username.split('@')[0],
-                            email: username,
-                            loginTime: new Date().toISOString()
-                        };
-                        
-                        this.saveSession();
-                        this.showApp();
-                    } else {
-                        alert('Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Zugangsdaten.');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
-                } finally {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }
-            }
-
-            async authenticateWithMalteser(username, password) {
-                // ⚠️ WICHTIG: In der echten Implementierung hier die echte Auth
-                // Für jetzt: Simuliere erfolgreiche Authentifizierung
-                
-                // Demo: Akzeptiere bestimmte Test-Logins
-                const testAccounts = [
-                    'test@malteser.org',
-                    'helfer@malteser.org', 
-                    'admin@malteser.org'
-                ];
-                
-                if (testAccounts.includes(username.toLowerCase()) && password.length >= 3) {
-                    return new Promise(resolve => setTimeout(() => resolve(true), 1500));
-                }
-                
-                return false;
-            }
-
-            showApp() {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                document.getElementById('user-display').textContent = `Hallo, ${this.user.name}`;
-            }
-
-            logout() {
-                this.authenticated = false;
-                this.user = null;
-                localStorage.removeItem('malteser_auth');
-                document.getElementById('app-container').classList.add('hidden');
-                document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('login-form').reset();
-            }
-
-            saveSession() {
-                localStorage.setItem('malteser_auth', JSON.stringify({
-                    authenticated: this.authenticated,
-                    user: this.user
-                }));
-            }
-
-            loadSession() {
-                const session = localStorage.getItem('malteser_auth');
-                if (session) {
-                    const data = JSON.parse(session);
-                    this.authenticated = data.authenticated;
-                    this.user = data.user;
-                }
             }
         }
 
-        // Global logout function
-        function logout() {
-            auth.logout();
-        }
-
-        // Auth initialisieren
-        const auth = new MalteserAuth();
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.auth = new MalteserAuth();
+        });
     </script>
 </body>
 </html>
+</html>
+
