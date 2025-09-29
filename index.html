@@ -1,16 +1,560 @@
 <!DOCTYPE html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Interne Helfer App für Team-Koordination" />
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192x192.png">
+  <link rel="icon" type="image/png" href="icon-192x192.png" sizes="192x192">
+  <link rel="icon" type="image/png" href="icon-512x512.png" sizes="512x512">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <title>Helfer App</title>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- React & Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Deine React App -->
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
 
-    <title>Helfer App</title>
-  </head>
-  <body>
-    <noscript>Diese App benötigt JavaScript, um zu funktionieren.</noscript>
-    <div id="root"></div>
-  </body>
+    // 🛠️ Katastrophenschutz-Helfer App (Prototyp)
+    // - Tabs: Termine, Chat, Bilderalbum, Formulare, Dateien
+    // - Konfigurierbar über die CONFIG unten
+    // - Clean UI mit Tailwind; kein Backend nötig für Demo
+    // - Optionales Branding (z. B. Malteser-CD) per CONFIG.brand
+
+    // =====================
+    // 🔧 KONFIGURATION
+    // =====================
+    const CONFIG = {
+      brand: {
+        name: "Helfer App",
+        logoLetter: "H",
+      },
+      links: {
+        icalFeed: "https://example.com/kalender.ics",
+        matrixSpace: "https://element.example.org/#/room/#einsatz:example.org",
+        albumUrl: "https://cloud.example.org/apps/photos/s/TEAM-ALBUM",
+        whatsappGroups: [
+          { name: "Einsatzleitung", url: "https://chat.whatsapp.com/INVITE_CODE_1" },
+          { name: "Verpflegungsteam", url: "https://chat.whatsapp.com/INVITE_CODE_2" },
+        ],
+        whatsappDirect: "https://wa.me/4917012345678?text=Hallo%20Team",
+      },
+      forms: [
+        { title: "Einsatz-Rückmeldung", url: "https://forms.example.org/rueckmeldung", note: "An/Abmeldung, Verfügbarkeit" },
+        { title: "Schadensmeldung Material", url: "https://forms.example.org/schaden", note: "Geräte & Verbrauchsmaterial" },
+        { title: "Fortbildungswunsch", url: "https://forms.example.org/fortbildung", note: "Kurse & Termine" },
+      ],
+      documents: [
+        { title: "Alarm- & Ausrückeordnung", url: "https://cloud.example.org/s/AAO.pdf", tags: ["AAO", "Alarm"] },
+        { title: "Hygieneplan Verpflegung", url: "https://cloud.example.org/s/Hygieneplan.pdf", tags: ["Hygiene", "Verpflegung"] },
+        { title: "Dienstvereinbarung KatS", url: "https://cloud.example.org/s/DV-KatS.pdf", tags: ["Recht", "DV"] },
+      ],
+    };
+
+    // Beispieltermine
+    const BASE_EVENTS = [
+      { id: "e1", title: "Übungsdienst Verpflegung", start: "2025-10-05T18:00", end: "2025-10-05T21:00", location: "Unterkunft Lagerhalle", type: "Übung" },
+      { id: "e2", title: "Sanitätsdienst Stadtfest", start: "2025-10-12T10:00", end: "2025-10-12T18:00", location: "Innenstadt", type: "Dienst" },
+    ];
+
+    // =====================
+    // 🧩 Hilfsfunktionen
+    // =====================
+    const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadLS = (k, fallback) => {
+      try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; }
+    };
+
+    function formatDateRange(startISO, endISO) {
+      const s = new Date(startISO);
+      const e = endISO ? new Date(endISO) : null;
+      const fmt = (d) => d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      return e ? `${fmt(s)} – ${fmt(e)}` : fmt(s);
+    }
+
+    // =====================
+    // 🔒 Fake-Auth
+    // =====================
+    function useFakeAuth() {
+      const [user, setUser] = useState(loadLS("auth_user", { name: "Helfer/in" }));
+      useEffect(() => saveLS("auth_user", user), [user]);
+      return { user, login: (name) => setUser({ name }), logout: () => setUser(null) };
+    }
+
+    // =====================
+    // 🗓️ Termine Tab
+    // =====================
+    function TermineTab() {
+      const [events, setEvents] = useState(loadLS("events", BASE_EVENTS));
+      const [filter, setFilter] = useState("");
+      const upcoming = useMemo(() => {
+        const now = new Date();
+        return events
+          .filter((e) => new Date(e.end || e.start) >= now)
+          .filter((e) => (filter ? e.type === filter : true))
+          .sort((a, b) => new Date(a.start) - new Date(b.start));
+      }, [events, filter]);
+
+      useEffect(() => saveLS("events", events), [events]);
+
+      const [draft, setDraft] = useState({ title: "", start: "", end: "", location: "", type: "Übung" });
+
+      function addEvent() {
+        if (!draft.title || !draft.start) return;
+        setEvents((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), ...draft },
+        ]);
+        setDraft({ title: "", start: "", end: "", location: "", type: draft.type });
+      }
+
+      return (
+        React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+          React.createElement('header', { className: "flex flex-col md:flex-row md:items-end md:justify-between gap-4" },
+            React.createElement('div', null,
+              React.createElement('h2', { className: "text-3xl font-extrabold" }, "Termine"),
+              React.createElement('p', { className: "text-gray-600" }, 
+                "Zeigt bevorstehende Dienste, Übungen und Treffen. Optionaler iCal-Feed: ",
+                React.createElement('a', { className: "underline", href: CONFIG.links.icalFeed }, "Kalender abonnieren"),
+                "."
+              )
+            ),
+            React.createElement('div', { className: "flex gap-2" },
+              React.createElement('select', { 
+                value: filter, 
+                onChange: (e) => setFilter(e.target.value),
+                className: "rounded-xl border border-gray-300 px-3 py-2"
+              },
+                React.createElement('option', { value: "" }, "Alle Typen"),
+                React.createElement('option', null, "Übung"),
+                React.createElement('option', null, "Dienst"),
+                React.createElement('option', null, "Fortbildung"),
+                React.createElement('option', null, "Einsatz")
+              )
+            )
+          ),
+
+          React.createElement('div', { className: "grid md:grid-cols-2 gap-4 mt-6" },
+            upcoming.map((e) =>
+              React.createElement('article', { 
+                key: e.id, 
+                className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm" 
+              },
+                React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, e.type || "Termin"),
+                React.createElement('h3', { className: "text-lg font-semibold mt-1" }, e.title),
+                React.createElement('p', { className: "text-gray-700 mt-1" }, formatDateRange(e.start, e.end)),
+                e.location && React.createElement('p', { className: "text-gray-600" }, "📍 ", e.location)
+              )
+            )
+          ),
+
+          React.createElement('div', { className: "mt-8 rounded-2xl border border-gray-200 p-5 bg-white shadow-sm" },
+            React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Neuer Termin (nur Demo, lokal gespeichert)"),
+            React.createElement('div', { className: "grid md:grid-cols-5 gap-3 mt-3" },
+              React.createElement('input', {
+                placeholder: "Titel",
+                className: "rounded-xl border border-gray-300 px-3 py-2",
+                value: draft.title,
+                onChange: (e) => setDraft({...draft, title: e.target.value})
+              }),
+              React.createElement('input', {
+                type: "datetime-local",
+                className: "rounded-xl border border-gray-300 px-3 py-2",
+                value: draft.start,
+                onChange: (e) => setDraft({...draft, start: e.target.value})
+              }),
+              React.createElement('input', {
+                type: "datetime-local",
+                className: "rounded-xl border border-gray-300 px-3 py-2",
+                value: draft.end,
+                onChange: (e) => setDraft({...draft, end: e.target.value})
+              }),
+              React.createElement('input', {
+                placeholder: "Ort",
+                className: "rounded-xl border border-gray-300 px-3 py-2",
+                value: draft.location,
+                onChange: (e) => setDraft({...draft, location: e.target.value})
+              }),
+              React.createElement('select', {
+                className: "rounded-xl border border-gray-300 px-3 py-2",
+                value: draft.type,
+                onChange: (e) => setDraft({...draft, type: e.target.value})
+              },
+                React.createElement('option', null, "Übung"),
+                React.createElement('option', null, "Dienst"),
+                React.createElement('option', null, "Fortbildung"),
+                React.createElement('option', null, "Einsatz")
+              )
+            ),
+            React.createElement('button', {
+              onClick: addEvent,
+              className: "mt-3 px-4 py-2 rounded-xl bg-black text-white text-sm shadow"
+            }, "Termin hinzufügen")
+          ),
+
+          React.createElement('div', { className: "mt-6 text-sm text-gray-500" },
+            "Tipp: Für echte Kalenderanbindung einfach einen iCal/ICS-Link (z. B. aus Nextcloud, O365/SharePoint, Google Calendar) verlinken oder serverseitig einlesen."
+          )
+        )
+      );
+    }
+
+    // =====================
+    // 💬 Chat Tab
+    // =====================
+    function ChatTab() {
+      const [rooms, setRooms] = useState(loadLS("chat_rooms", [
+        { id: "r1", name: "Einsatzleitung", unread: 2 },
+        { id: "r2", name: "Verpflegungsteam", unread: 0 },
+        { id: "r3", name: "San-Dienst Stadtfest", unread: 5 },
+      ]));
+      const [active, setActive] = useState(loadLS("chat_active", "r2"));
+      const [messages, setMessages] = useState(loadLS("chat_messages", {
+        r2: [ { id: "m1", user: "Lea", text: "Bitte Wasserkanister auffüllen.", ts: Date.now()-3600_000 }, ],
+      }));
+      const [input, setInput] = useState("");
+
+      useEffect(() => saveLS("chat_rooms", rooms), [rooms]);
+      useEffect(() => saveLS("chat_active", active), [active]);
+      useEffect(() => saveLS("chat_messages", messages), [messages]);
+
+      function send() {
+        if (!input.trim()) return;
+        setMessages((prev) => ({
+          ...prev,
+          [active]: [...(prev[active]||[]), { id: crypto.randomUUID(), user: "Ich", text: input.trim(), ts: Date.now() }],
+        }));
+        setInput("");
+      }
+
+      return (
+        React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+          React.createElement('header', { className: "flex items-center justify-between" },
+            React.createElement('div', null,
+              React.createElement('h2', { className: "text-3xl font-extrabold" }, "Chat-Räume"),
+              React.createElement('p', { className: "text-gray-600" }, 
+                "Demo-Chat (lokal). Für den Betrieb verlinke z. B. eine ",
+                React.createElement('a', { className: "underline", href: CONFIG.links.matrixSpace }, "Matrix/Element"),
+                "-Instanz oder WhatsApp-Gruppen."
+              )
+            )
+          ),
+
+          CONFIG.links.whatsappGroups?.length > 0 && 
+            React.createElement('div', { className: "mt-4 rounded-2xl border border-gray-200 bg-white shadow-sm p-4" },
+              React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "WhatsApp-Gruppen"),
+              React.createElement('div', { className: "mt-2 flex flex-wrap gap-2" },
+                CONFIG.links.whatsappGroups.map((g, i) =>
+                  React.createElement('a', {
+                    key: i,
+                    href: g.url,
+                    className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
+                  }, g.name)
+                ),
+                CONFIG.links.whatsappDirect && 
+                  React.createElement('a', {
+                    href: CONFIG.links.whatsappDirect,
+                    className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50"
+                  }, "Direktchat")
+              ),
+              React.createElement('div', { className: "text-xs text-gray-500 mt-2" }, 
+                "Hinweis: WhatsApp bietet keine Gruppen-API – Links öffnen die jeweilige Gruppe/App."
+              )
+            ),
+
+          React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+            React.createElement('aside', { className: "md:col-span-1 space-y-2" },
+              rooms.map((r) =>
+                React.createElement('button', {
+                  key: r.id,
+                  onClick: () => setActive(r.id),
+                  className: `w-full text-left px-4 py-3 rounded-xl border shadow-sm ${active===r.id?"bg-black text-white border-black":"bg-white border-gray-200"}`
+                },
+                  React.createElement('div', { className: "flex items-center justify-between" },
+                    React.createElement('span', { className: "font-medium" }, r.name),
+                    r.unread > 0 && 
+                      React.createElement('span', { 
+                        className: `text-xs ${active===r.id?"bg-white text-black":"bg-black text-white"} rounded-full px-2 py-0.5` 
+                      }, r.unread)
+                  )
+                )
+              )
+            ),
+            React.createElement('main', { className: "md:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col h-[480px]" },
+              React.createElement('div', { className: "flex-1 overflow-y-auto space-y-3 pr-1" },
+                (messages[active]||[]).map(m =>
+                  React.createElement('div', { 
+                    key: m.id, 
+                    className: `max-w-[80%] ${m.user==="Ich"?"ml-auto":""}` 
+                  },
+                    React.createElement('div', { 
+                      className: `rounded-2xl px-4 py-2 border ${m.user==="Ich"?"bg-black text-white border-black":"bg-gray-50 border-gray-200"}` 
+                    },
+                      React.createElement('div', { className: "text-sm" },
+                        React.createElement('span', { className: "font-semibold" }, m.user),
+                        ": ",
+                        m.text
+                      ),
+                      React.createElement('div', { className: "text-[10px] opacity-70 mt-1" }, 
+                        new Date(m.ts).toLocaleString()
+                      )
+                    )
+                  )
+                )
+              ),
+              React.createElement('div', { className: "mt-3 flex gap-2" },
+                React.createElement('input', {
+                  value: input,
+                  onChange: (e) => setInput(e.target.value),
+                  placeholder: "Nachricht schreiben…",
+                  className: "flex-1 rounded-xl border border-gray-300 px-3 py-2"
+                }),
+                React.createElement('button', {
+                  onClick: send,
+                  className: "px-4 py-2 rounded-xl bg-black text-white text-sm shadow"
+                }, "Senden")
+              )
+            )
+          ),
+
+          React.createElement('div', { className: "mt-6 text-sm text-gray-500" },
+            "Integration: Matrix/Element, Mattermost, Rocket.Chat oder Teams/Slack per Deeplink/Embed verlinken."
+          )
+        )
+      );
+    }
+
+    // =====================
+    // 🖼️ Bilderalbum Tab
+    // =====================
+    function AlbumTab() {
+      return (
+        React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+          React.createElement('h2', { className: "text-3xl font-extrabold" }, "Gemeinsames Bilderalbum"),
+          React.createElement('p', { className: "text-gray-600" }, "Verweise auf euer Team-Album. Rechteverwaltung erledigt die angebundene Plattform."),
+
+          React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+            React.createElement('a', { 
+              href: CONFIG.links.albumUrl, 
+              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
+            },
+              React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
+              React.createElement('div', { className: "font-semibold mt-3" }, "Team-Album öffnen"),
+              React.createElement('div', { className: "text-sm text-gray-600" }, "Nextcloud/SharePoint/Google Photos o. Ä.")
+            ),
+            React.createElement('a', { 
+              href: "#", 
+              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
+            },
+              React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
+              React.createElement('div', { className: "font-semibold mt-3" }, "Einsatz XYZ"),
+              React.createElement('div', { className: "text-sm text-gray-600" }, "Beispiel-Unteralbum (Platzhalter)")
+            ),
+            React.createElement('a', { 
+              href: "#", 
+              className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50" 
+            },
+              React.createElement('div', { className: "h-28 rounded-xl bg-gray-100" }),
+              React.createElement('div', { className: "font-semibold mt-3" }, "Übungsdienst Fotos"),
+              React.createElement('div', { className: "text-sm text-gray-600" }, "Platzhalter")
+            )
+          ),
+
+          React.createElement('div', { className: "mt-6 text-sm text-gray-500" }, 
+            "Tipp: Für DSGVO – Freigaben über eure Cloud steuern, nicht in der App."
+          )
+        )
+      );
+    }
+
+    // =====================
+    // ✅ Formulare Tab
+    // =====================
+    function FormsTab() {
+      const [query, setQuery] = useState("");
+      const items = CONFIG.forms.filter(f => (f.title+" "+(f.note||"")).toLowerCase().includes(query.toLowerCase()));
+      
+      return (
+        React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+          React.createElement('h2', { className: "text-3xl font-extrabold" }, "Formulare & Abfragen"),
+          React.createElement('p', { className: "text-gray-600" }, "Schnelle Links zu Forms (Nextcloud Forms, Microsoft Forms, Google Forms o. Ä.)."),
+          React.createElement('div', { className: "mt-4 flex gap-2" },
+            React.createElement('input', {
+              value: query,
+              onChange: (e) => setQuery(e.target.value),
+              placeholder: "Suchen…",
+              className: "rounded-xl border border-gray-300 px-3 py-2"
+            })
+          ),
+          React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+            items.map((f, i) =>
+              React.createElement('a', {
+                key: i,
+                href: f.url,
+                className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
+              },
+                React.createElement('div', { className: "text-sm uppercase tracking-widest text-gray-500" }, "Formular"),
+                React.createElement('div', { className: "font-semibold mt-1" }, f.title),
+                f.note && React.createElement('div', { className: "text-sm text-gray-600" }, f.note)
+              )
+            )
+          )
+        )
+      );
+    }
+
+    // =====================
+    // 📁 Dateien Tab
+    // =====================
+    function FilesTab() {
+      const [query, setQuery] = useState("");
+      const [tags, setTags] = useState([]);
+      const allTags = useMemo(() => Array.from(new Set(CONFIG.documents.flatMap(d => d.tags||[]))), []);
+      const items = useMemo(() => CONFIG.documents.filter(d => {
+        const text = (d.title + " " + (d.tags||[]).join(" ")).toLowerCase();
+        const okText = text.includes(query.toLowerCase());
+        const okTags = tags.length ? tags.every(t => d.tags?.includes(t)) : true;
+        return okText && okTags;
+      }), [query, tags]);
+
+      function toggleTag(t) { setTags((prev) => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t]); }
+
+      return (
+        React.createElement('section', { className: "max-w-6xl mx-auto px-4 py-10" },
+          React.createElement('h2', { className: "text-3xl font-extrabold" }, "Wichtige Dateien & Unterlagen"),
+          React.createElement('p', { className: "text-gray-600" }, "Zentrale Dokumente verlinken – Ablage z. B. in Nextcloud/SharePoint/Google Drive."),
+
+          React.createElement('div', { className: "mt-4 flex flex-wrap gap-2 items-center" },
+            React.createElement('input', {
+              value: query,
+              onChange: (e) => setQuery(e.target.value),
+              placeholder: "Suchen…",
+              className: "rounded-xl border border-gray-300 px-3 py-2"
+            }),
+            React.createElement('div', { className: "flex gap-2 flex-wrap" },
+              allTags.map(t =>
+                React.createElement('button', {
+                  key: t,
+                  onClick: () => toggleTag(t),
+                  className: `px-3 py-1 rounded-full text-sm border ${tags.includes(t)?"bg-black text-white border-black":"bg-white border-gray-300"}`
+                }, t)
+              )
+            )
+          ),
+
+          React.createElement('div', { className: "grid md:grid-cols-3 gap-6 mt-6" },
+            items.map((d, i) =>
+              React.createElement('a', {
+                key: i,
+                href: d.url,
+                className: "rounded-2xl border border-gray-200 p-5 bg-white shadow-sm block hover:bg-gray-50"
+              },
+                React.createElement('div', { className: "h-20 rounded-xl bg-gray-100" }),
+                React.createElement('div', { className: "font-semibold mt-3" }, d.title),
+                React.createElement('div', { className: "text-sm text-gray-600" }, (d.tags||[]).join(" • "))
+              )
+            )
+          )
+        )
+      );
+    }
+
+    // =====================
+    // 🔩 Haupt-App
+    // =====================
+    function HelferApp() {
+      const [tab, setTab] = useState("termine");
+      const { user, login, logout } = useFakeAuth();
+
+      const TabButton = ({ id, label }) =>
+        React.createElement('button', {
+          onClick: () => setTab(id),
+          className: `px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm border
+            ${tab === id ? "bg-black text-white border-black" : "bg-white hover:bg-gray-50 border-gray-200"}`,
+          'aria-pressed': tab === id
+        }, label);
+
+      return (
+        React.createElement('div', { className: "min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900" },
+          React.createElement('header', { className: "sticky top-0 z-10 backdrop-blur bg-white/70 border-b border-gray-200" },
+            React.createElement('div', { className: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between" },
+              React.createElement('div', { className: "flex items-center gap-2" },
+                React.createElement('div', { className: "h-9 w-9 rounded-2xl bg-black text-white grid place-items-center font-bold" }, 
+                  CONFIG.brand.logoLetter
+                ),
+                React.createElement('div', { className: "text-lg font-semibold tracking-tight" }, CONFIG.brand.name)
+              ),
+              React.createElement('nav', { className: "flex gap-2" },
+                React.createElement(TabButton, { id: "termine", label: "Termine" }),
+                React.createElement(TabButton, { id: "chat", label: "Chat" }),
+                React.createElement(TabButton, { id: "album", label: "Bilderalbum" }),
+                React.createElement(TabButton, { id: "forms", label: "Formulare" }),
+                React.createElement(TabButton, { id: "files", label: "Dateien" })
+              ),
+              React.createElement('div', { className: "hidden md:flex items-center gap-2" },
+                user ? [
+                  React.createElement('span', { className: "text-sm text-gray-600", key: "greet" }, "Hallo, ", user.name),
+                  React.createElement('button', { 
+                    onClick: logout, 
+                    className: "px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm",
+                    key: "logout"
+                  }, "Abmelden")
+                ] : 
+                React.createElement('button', {
+                  onClick: () => login("Helfer/in"),
+                  className: "px-3 py-2 rounded-xl bg-black text-white text-sm"
+                }, "Anmelden")
+              )
+            )
+          ),
+
+          tab === "termine" && React.createElement(TermineTab),
+          tab === "chat" && React.createElement(ChatTab),
+          tab === "album" && React.createElement(AlbumTab),
+          tab === "forms" && React.createElement(FormsTab),
+          tab === "files" && React.createElement(FilesTab),
+
+          React.createElement('footer', { className: "border-t border-gray-200 py-8 mt-10" },
+            React.createElement('div', { className: "max-w-6xl mx-auto px-4 text-sm text-gray-500" },
+              "© ", new Date().getFullYear(), " ", CONFIG.brand.name, ". Bereit für Einsatz & Übung."
+            )
+          )
+        )
+      );
+    }
+
+    // App rendern
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(HelferApp));
+  </script>
+
+  <!-- Service Worker Registrierung -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(function(err) {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
+</body>
 </html>
