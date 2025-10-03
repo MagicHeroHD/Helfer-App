@@ -635,16 +635,17 @@
                 } catch (error) {
                     console.error('Login error:', error);
                 
-                // DEMO: For testing, accept these credentials
-                const validAccounts = {
-                    'test@malteser.org': 'anypassword',
-                    'helfer@malteser.org': 'anypassword', 
-                    'admin@malteser.org': 'anypassword',
-                    'einsatz@malteser.org': 'anypassword'
-                };
+                    // DEMO: For testing, accept these credentials
+                    const validAccounts = {
+                        'test@malteser.org': 'anypassword',
+                        'helfer@malteser.org': 'anypassword', 
+                        'admin@malteser.org': 'anypassword',
+                        'einsatz@malteser.org': 'anypassword'
+                    };
 
-                // In production, this would make a secure API call to your backend
-                return validAccounts[username.toLowerCase()] && password.length >= 1;
+                    // In production, this would make a secure API call to your backend
+                    return validAccounts[username.toLowerCase()] && password.length >= 1;
+                }
             }
 
             formatName(email) {
@@ -863,5 +864,6 @@
 </body>
 </html>
 </html>
+
 
 
