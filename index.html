@@ -616,6 +616,25 @@
             }
 
             async verifyCredentials(username, password) {
+
+                try {
+                    const response = await fetch('http://localhost:3000/api/auth/malteser', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: username,
+                            password: password
+                        })
+                    });
+        
+                    const result = await response.json();
+                    return result.authenticated;
+        
+                } catch (error) {
+                    console.error('Login error:', error);
+                
                 // DEMO: For testing, accept these credentials
                 const validAccounts = {
                     'test@malteser.org': 'anypassword',
@@ -844,4 +863,5 @@
 </body>
 </html>
 </html>
+
 
